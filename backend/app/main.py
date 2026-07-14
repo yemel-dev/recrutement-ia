@@ -3,7 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.models import User, JobOffer, Application, PersonalityTest, Ranking
 from app.routers.auth import router as auth_router
+from app.routers.personality import router as personality_router
 from app.routers.offers import router as offers_router
+from app.routers.applications import router as applications_router
 
 # Création automatique des tables au démarrage
 Base.metadata.create_all(bind=engine)
@@ -25,7 +27,9 @@ app.add_middleware(
 
 # ─── Routers ──────────────────────────────────────────────────────────────────
 app.include_router(auth_router)
+app.include_router(personality_router)
 app.include_router(offers_router)
+app.include_router(applications_router)
 
 
 # ─── Endpoints de base ────────────────────────────────────────────────────────
