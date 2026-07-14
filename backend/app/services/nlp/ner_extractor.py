@@ -165,10 +165,10 @@ def _extraire_annees_experience(texte: str, dates_spacy: list[str]) -> float:
 
     # ── Passe 1 : patterns explicites "X ans" ou "X années" ──
     patterns_experience = [
-        r"(\d+)\s*ans?\s+d[e']expérience",
-        r"(\d+)\s*années?\s+d[e']expérience",
+        r"(\d+)\s*ans?\s+d[e']exp[ée]rience",
+        r"(\d+)\s*années?\s+d[e']exp[ée]rience",
         r"(\d+)\s*ans?\s+d[e']expertise",
-        r"expérience\s+de\s+(\d+)\s*ans?",
+        r"exp[ée]rience\s+de\s+(\d+)\s*ans?",
         r"(\d+)\s*ans?\s+en\s+\w+",
         r"(\d+)\s*années?\s+en\s+\w+",
     ]
