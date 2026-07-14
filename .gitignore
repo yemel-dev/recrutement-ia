@@ -10,3 +10,4 @@ node_modules/
 # Fichiers de test locaux (données, pas du code)
 tests/*.pdf
 tests/*.docx
+uploads/
