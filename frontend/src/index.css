@@ -286,6 +286,11 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   color: inherit;
   border: 1px solid #ECEAF7;
 }
+.candidature-row .status-pill,
+.candidat-row .status-pill {
+  margin-left: auto;
+}
+
 .candidat-row:hover { border-color: #C9C2ED; }
 .rank { font-weight: 600; color: #9B95C9; width: 28px; font-size: 13px; }
 
@@ -358,4 +363,51 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   width: 36px;
   text-align: right;
   color: #26215C;
+}
+
+.sous-scores-mini {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  color: #9B95C9;
+}
+.sous-scores-mini span {
+  background: #F7F6FB;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.offre-admin-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.offre-admin-actions a {
+  color: #534AB7;
+}
+.btn-danger-link {
+  background: none;
+  border: none;
+  color: #A32D2D;
+  padding: 0;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-danger-link:hover {
+  text-decoration: underline;
+}
+
+.skills-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.skill-pill {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: #EEEDFE;
+  color: #534AB7;
 }

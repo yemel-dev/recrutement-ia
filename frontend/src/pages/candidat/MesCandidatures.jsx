@@ -8,7 +8,7 @@ export default function MesCandidatures() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api.get("/applications/")
+    api.get("/applications/me")
       .then((res) => setCandidatures(res.data))
       .catch(() => setError("Impossible de charger tes candidatures."))
       .finally(() => setLoading(false));
@@ -22,8 +22,13 @@ export default function MesCandidatures() {
     <div className="candidatures-list">
       {candidatures.map((c) => (
         <div key={c.id} className="candidature-row">
-          <span>Offre #{c.offer_id}</span>
-          <span className={`status-pill status-${c.cv_status?.toLowerCase()}`}>{c.cv_status}</span>
+          <span>Offre #{c.offre_id}</span>
+          {c.score_global !== null && c.score_global !== undefined && (
+            <span style={{ fontSize: 13, color: "#6E6899" }}>
+              Score : {c.score_global.toFixed(2)}
+            </span>
+          )}
+          <span className={`status-pill status-${c.statut}`}>{c.statut}</span>
         </div>
       ))}
     </div>

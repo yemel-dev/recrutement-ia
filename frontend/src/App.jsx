@@ -13,6 +13,7 @@ import Dashboard from "./pages/recruteur/Dashboard";
 import CreerOffre from "./pages/recruteur/CreerOffre";
 import Classement from "./pages/recruteur/Classement";
 import FicheCandidat from "./pages/recruteur/FicheCandidat";
+import ModifierOffre from "./pages/recruteur/ModifierOffre";
 
 function App() {
   return (
@@ -60,6 +61,12 @@ function App() {
       <Route path="/recruteur/candidats/:applicationId" element={
         <ProtectedRoute allowedRole="recruteur">
           <Layout title="Fiche candidat"><FicheCandidat /></Layout>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/recruteur/offres/:offreId/modifier" element={
+        <ProtectedRoute allowedRole="recruteur">
+        <Layout title="Modifier l'offre"><ModifierOffre /></Layout>
         </ProtectedRoute>
       } />
     </Routes>
