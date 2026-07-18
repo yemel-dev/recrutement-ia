@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,16 +18,25 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await api.post("/auth/login", { email, password });
-      const { access_token, role } = response.data;
+      const formData = new URLSearchParams();
+      formData.append("grant_type", "password");
+      formData.append("username", email);
+      formData.append("password", password);
+
+      const loginResponse = await api.post("/auth/login", formData, {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      });
+
+      const { access_token } = loginResponse.data;
+
+      localStorage.setItem("token", access_token);
+
+      const meResponse = await api.get("/auth/me");
+      const { role } = meResponse.data;
 
       login({ email, role }, access_token);
 
-      if (role === "recruteur") {
-        navigate("/recruteur/dashboard");
-      } else {
-        navigate("/candidat/offres");
-      }
+      navigate(role === "recruteur" ? "/recruteur/dashboard" : "/candidat/offres");
     } catch (err) {
       setError("Email ou mot de passe incorrect.");
     } finally {
@@ -61,6 +70,10 @@ export default function Login() {
         <button type="submit" disabled={loading}>
           {loading ? "Connexion..." : "Se connecter"}
         </button>
+
+        <p className="switch-link">
+          Pas encore de compte ? <Link to="/register">S'inscrire</Link>
+        </p>
       </form>
     </div>
   );

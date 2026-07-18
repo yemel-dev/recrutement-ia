@@ -13,7 +13,7 @@ export default function TestBigFive() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get("/personality/questions")
+    api.get("/personality-tests/questions")
       .then((res) => setQuestions(res.data))
       .catch(() => setLoadError("Impossible de charger le test pour le moment."));
   }, []);
@@ -34,7 +34,7 @@ export default function TestBigFive() {
     setSubmitting(true);
     setError("");
     try {
-      await api.post("/personality/submit", { reponses: finalReponses });
+      await api.post("/personality-tests", { reponses: finalReponses });
       navigate("/candidat/candidatures");
     } catch (err) {
       setError("Erreur lors de l'envoi du test.");

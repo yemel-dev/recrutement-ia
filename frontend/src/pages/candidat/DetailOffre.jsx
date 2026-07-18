@@ -24,33 +24,33 @@ export default function DetailOffre() {
   };
 
   const handlePostuler = async () => {
-    if (!cvFile) {
-      setError("Merci de sélectionner un fichier CV.");
-      return;
+  if (!cvFile) {
+    setError("Merci de sélectionner un fichier CV.");
+    return;
+  }
+
+  setSubmitting(true);
+  setError("");
+
+  const formData = new FormData();
+  formData.append("offre_id", offreId);
+  formData.append("file", cvFile);
+
+  try {
+    await api.post("/applications", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    navigate("/candidat/test-personnalite");
+  } catch (err) {
+    if (err.response?.status === 400) {
+      setError("Tu as déjà postulé à cette offre.");
+    } else {
+      setError("Une erreur est survenue, réessaie.");
     }
-
-    setSubmitting(true);
-    setError("");
-
-    const formData = new FormData();
-    formData.append("offer_id", offreId);
-    formData.append("cv_file", cvFile);
-
-    try {
-      await api.post("/applications/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      navigate("/candidat/test-personnalite");
-    } catch (err) {
-      if (err.response?.status === 400) {
-        setError("Tu as déjà postulé à cette offre.");
-      } else {
-        setError("Une erreur est survenue, réessaie.");
-      }
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (loadError) return <StatusMessage type="error" message={loadError} />;
   if (!offre) return <StatusMessage type="loading" />;
