@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
+import Layout from "../../components/Layout";
 
 export default function TestBigFive() {
   const [questions, setQuestions] = useState([]);
@@ -22,7 +23,6 @@ export default function TestBigFive() {
     const question = questions[current];
     const newReponses = { ...reponses, [question.id]: value };
     setReponses(newReponses);
-
     if (current < questions.length - 1) {
       setCurrent(current + 1);
     } else {
@@ -43,29 +43,31 @@ export default function TestBigFive() {
     }
   };
 
-  if (loadError) return <StatusMessage type="error" message={loadError} />;
-  if (questions.length === 0) return <StatusMessage type="loading" message="Chargement du test..." />;
+  if (loadError) return <Layout title="Test de personnalité"><StatusMessage type="error" message={loadError} /></Layout>;
+  if (questions.length === 0) return <Layout title="Test de personnalité"><StatusMessage type="loading" message="Chargement du test..." /></Layout>;
 
   const question = questions[current];
 
   return (
-    <div className="bigfive-page">
-      <p className="q-progress-label">Question {current + 1} sur {questions.length}</p>
-      <div className="q-progress-bar">
-        <div className="q-progress-fill" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
+    <Layout title="Test de personnalité">
+      <div className="bigfive-page">
+        <p className="q-progress-label">Question {current + 1} sur {questions.length}</p>
+        <div className="q-progress-bar">
+          <div className="q-progress-fill" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
+        </div>
+
+        <h2>{question.text}</h2>
+
+        {error && <p className="error">{error}</p>}
+
+        <div className="likert-options">
+          {[1, 2, 3, 4, 5].map((val) => (
+            <button key={val} onClick={() => handleAnswer(val)} disabled={submitting}>
+              {val} — {["Pas du tout d'accord", "Plutôt en désaccord", "Neutre", "Plutôt d'accord", "Tout à fait d'accord"][val - 1]}
+            </button>
+          ))}
+        </div>
       </div>
-
-      <h2>{question.text}</h2>
-
-      {error && <p className="error">{error}</p>}
-
-      <div className="likert-options">
-        {[1, 2, 3, 4, 5].map((val) => (
-          <button key={val} onClick={() => handleAnswer(val)} disabled={submitting}>
-            {val} — {["Pas du tout d'accord", "Plutôt en désaccord", "Neutre", "Plutôt d'accord", "Tout à fait d'accord"][val - 1]}
-          </button>
-        ))}
-      </div>
-    </div>
+    </Layout>
   );
 }

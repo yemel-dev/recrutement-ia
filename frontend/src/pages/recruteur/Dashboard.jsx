@@ -2,66 +2,141 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
+import Layout from "../../components/Layout";
 
 export default function Dashboard() {
+  const [prenom, setPrenom] = useState("");
   const [offres, setOffres] = useState([]);
+  const [classements, setClassements] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
 
-  const chargerOffres = () => {
+  const chargerTout = async () => {
     setLoading(true);
-    api.get("/offers/")
-      .then((res) => setOffres(res.data))
-      .catch(() => setError("Impossible de charger tes offres."))
-      .finally(() => setLoading(false));
+    setError("");
+    try {
+      const meRes = await api.get("/auth/me");
+      setPrenom(meRes.data.prenom || "");
+      const monId = meRes.data.id;
+
+      const offresRes = await api.get("/offers/");
+      const mesOffres = monId
+        ? offresRes.data.filter((o) => o.recruteur_id === monId)
+        : offresRes.data;
+      setOffres(mesOffres);
+
+      const resultats = await Promise.all(
+        mesOffres.map((o) =>
+          api.get(`/offers/${o.id}/ranking`).then((r) => ({ id: o.id, data: r.data })).catch(() => ({ id: o.id, data: [] }))
+        )
+      );
+      const map = {};
+      resultats.forEach((r) => { map[r.id] = r.data; });
+      setClassements(map);
+    } catch {
+      setError("Impossible de charger le tableau de bord.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    chargerOffres();
-  }, []);
+  useEffect(() => { chargerTout(); }, []);
 
   const handleDesactiver = async (offreId) => {
-    if (!window.confirm("Désactiver cette offre ? Elle ne sera plus visible des candidats, mais les candidatures déjà reçues resteront consultables.")) {
-      return;
-    }
+    if (!window.confirm("Désactiver cette offre ?")) return;
     try {
       await api.delete(`/offers/${offreId}`);
-      chargerOffres();
+      chargerTout();
     } catch {
       alert("Impossible de désactiver cette offre.");
     }
   };
 
+  if (loading) return <Layout title="Tableau de bord"><StatusMessage type="loading" /></Layout>;
+  if (error) return <Layout title="Tableau de bord"><StatusMessage type="error" message={error} /></Layout>;
+
+  const offresFiltrees = offres.filter((o) =>
+    o.titre.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const offresActives = offres.filter((o) => o.is_active).length;
+  const toutesCandidatures = Object.values(classements).flat();
+  const totalCandidatures = toutesCandidatures.length;
+  const topProfils = [...toutesCandidatures].sort((a, b) => b.score_global - a.score_global).slice(0, 5);
+  const scoreEleve = toutesCandidatures.filter((c) => c.score_global >= 0.8).length;
+  const offresSansCandidature = offres.filter((o) => (classements[o.id]?.length || 0) === 0).length;
+
+  const notifications = [
+    scoreEleve > 0 && `${scoreEleve} candidature${scoreEleve > 1 ? "s ont" : " a"} un score ≥ 0.80`,
+    offresSansCandidature > 0 && `${offresSansCandidature} offre${offresSansCandidature > 1 ? "s" : ""} n'a/n'ont encore reçu aucune candidature`,
+  ].filter(Boolean);
+
+  const offreParPosition = (entry) => {
+    const offreId = Object.keys(classements).find((id) => classements[id].some((c) => c === entry));
+    return offres.find((o) => o.id === Number(offreId));
+  };
+
   return (
-    <div>
-      <div className="dashboard-header">
-        <h2 style={{ margin: 0, fontSize: 15, color: "#6E6899" }}>
-          {offres.length} offre{offres.length !== 1 ? "s" : ""} publiée{offres.length !== 1 ? "s" : ""}
-        </h2>
+    <Layout
+      title="Tableau de bord"
+      onSearch={setSearch}
+      searchPlaceholder="Rechercher une offre..."
+      notifications={notifications}
+    >
+      <div className="hero-banner">
+        <div>
+          <h2 className="hero-title">Bonjour{prenom ? `, ${prenom}` : ""} 👋</h2>
+          <p className="hero-subtitle">Pilote ton processus de recrutement assisté par l'IA.</p>
+        </div>
         <Link to="/recruteur/offres/nouvelle" className="btn-primary">+ Nouvelle offre</Link>
       </div>
 
-      {loading && <StatusMessage type="loading" />}
-      {!loading && error && <StatusMessage type="error" message={error} />}
-      {!loading && !error && offres.length === 0 && (
-        <StatusMessage type="empty" message="Tu n'as encore publié aucune offre." />
-      )}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-purple"><span>💼</span></div>
+          <p className="stat-value">{offresActives}</p>
+          <p className="stat-label">Offres actives</p>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-blue"><span>👥</span></div>
+          <p className="stat-value">{totalCandidatures}</p>
+          <p className="stat-label">Candidatures classées</p>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-green"><span>🎯</span></div>
+          <p className="stat-value">{scoreEleve}</p>
+          <p className="stat-label">Score ≥ 0.80</p>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon stat-icon-amber"><span>📋</span></div>
+          <p className="stat-value">{offres.length}</p>
+          <p className="stat-label">Offres au total</p>
+        </div>
+      </div>
 
-      {!loading && !error && offres.length > 0 && (
-        <div className="offres-grid">
-          {offres.map((offre) => (
-            <div key={offre.id} className="offre-admin-card" style={{ cursor: "default" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <h2>{offre.titre}</h2>
-                {!offre.is_active && <span className="status-pill" style={{ background: "#FBEAEA", color: "#A32D2D" }}>Désactivée</span>}
+      <div className="dashboard-columns">
+        <div className="panel">
+          <p className="panel-title">Mes offres</p>
+          <p className="panel-subtitle">Campagnes de recrutement</p>
+
+          {offresFiltrees.length === 0 && (
+            <StatusMessage type="empty" message={search ? "Aucune offre ne correspond à ta recherche." : "Tu n'as encore publié aucune offre."} />
+          )}
+
+          {offresFiltrees.map((offre) => (
+            <div key={offre.id} className="offre-list-item">
+              <div className="offre-list-icon">💼</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="offre-list-title">{offre.titre}</p>
+                <p className="offre-list-meta">
+                  {(classements[offre.id]?.length || 0)} candidature{(classements[offre.id]?.length || 0) !== 1 ? "s" : ""}
+                </p>
               </div>
-              <p className="location">{offre.experience_requise} an{offre.experience_requise > 1 ? "s" : ""} d'expérience requis</p>
-              <div className="skills-pills">
-                {offre.competences_requises?.slice(0, 4).map((c) => (
-                  <span key={c} className="skill-pill">{c}</span>
-                ))}
-              </div>
-              <div className="offre-admin-actions">
+              <span className={`status-pill ${offre.is_active ? "status-analyse" : ""}`}>
+                {offre.is_active ? "Active" : "Désactivée"}
+              </span>
+              <div className="offre-list-actions">
                 <Link to={`/recruteur/offres/${offre.id}/classement`}>Candidatures →</Link>
                 <Link to={`/recruteur/offres/${offre.id}/modifier`}>Modifier</Link>
                 {offre.is_active && (
@@ -73,7 +148,37 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-      )}
-    </div>
+
+        <div className="panel">
+          <p className="panel-title">Meilleurs profils</p>
+          <p className="panel-subtitle">Toutes offres confondues</p>
+
+          {topProfils.length === 0 && (
+            <StatusMessage type="empty" message="Aucun profil classé pour le moment." />
+          )}
+
+          {topProfils.map((entry, i) => {
+            const offre = offreParPosition(entry);
+            return (
+              <div key={`${entry.candidat_email}-${i}`} className="top-profile-row">
+                <span className="rank">#{i + 1}</span>
+                <div className="avatar avatar-sm">
+                  {entry.candidat_prenom?.[0]}{entry.candidat_nom?.[0]}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p className="offre-list-title">{entry.candidat_prenom} {entry.candidat_nom}</p>
+                  <p className="offre-list-meta">{offre?.titre || "—"}</p>
+                </div>
+                <span className="top-profile-score">{Math.round(entry.score_global * 100)}</span>
+              </div>
+            );
+          })}
+
+          {topProfils.length > 0 && (
+            <Link to="/recruteur/candidatures" className="panel-see-all">Voir toutes les candidatures →</Link>
+          )}
+        </div>
+      </div>
+    </Layout>
   );
 }

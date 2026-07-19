@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
+import Layout from "../../components/Layout";
 
 export default function MesCandidatures() {
   const [candidatures, setCandidatures] = useState([]);
@@ -14,23 +15,28 @@ export default function MesCandidatures() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <StatusMessage type="loading" />;
-  if (error) return <StatusMessage type="error" message={error} />;
-  if (candidatures.length === 0) return <StatusMessage type="empty" message="Tu n'as postulé à aucune offre pour l'instant." />;
-
   return (
-    <div className="candidatures-list">
-      {candidatures.map((c) => (
-        <div key={c.id} className="candidature-row">
-          <span>Offre #{c.offre_id}</span>
-          {c.score_global !== null && c.score_global !== undefined && (
-            <span style={{ fontSize: 13, color: "#6E6899" }}>
-              Score : {c.score_global.toFixed(2)}
-            </span>
-          )}
-          <span className={`status-pill status-${c.statut}`}>{c.statut}</span>
+    <Layout title="Mes candidatures">
+      {loading && <StatusMessage type="loading" />}
+      {!loading && error && <StatusMessage type="error" message={error} />}
+      {!loading && !error && candidatures.length === 0 && (
+        <StatusMessage type="empty" message="Tu n'as postulé à aucune offre pour l'instant." />
+      )}
+      {!loading && !error && candidatures.length > 0 && (
+        <div className="candidatures-list">
+          {candidatures.map((c) => (
+            <div key={c.id} className="candidature-row">
+              <span>Offre #{c.offre_id}</span>
+              {c.score_global !== null && c.score_global !== undefined && (
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Score : {c.score_global.toFixed(2)}
+                </span>
+              )}
+              <span className={`status-pill status-${c.statut}`}>{c.statut}</span>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </Layout>
   );
 }
