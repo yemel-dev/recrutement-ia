@@ -1,4 +1,5 @@
 """
+Membre 2
 applications.py — Endpoints REST pour les candidatures
 
     POST /applications         → le candidat postule à une offre (upload CV)
@@ -26,7 +27,6 @@ import os
 import shutil
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
-from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -158,38 +158,3 @@ def obtenir_candidature(
         )
 
     return candidature
-
-
-# ─── GET /applications/{id}/cv ────────────────────────────────────────────────
-
-@router.get("/{application_id}/cv")
-def telecharger_cv(
-    application_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Télécharge le fichier CV d'une candidature.
-    Mêmes règles d'accès que GET /applications/{id} : le candidat propriétaire
-    ou le recruteur propriétaire de l'offre concernée.
-    """
-    candidature = db.query(Application).filter(Application.id == application_id).first()
-    if candidature is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidature introuvable")
-
-    est_le_candidat = candidature.candidat_id == current_user.id
-    est_le_recruteur_de_loffre = candidature.offre.recruteur_id == current_user.id
-    if not (est_le_candidat or est_le_recruteur_de_loffre):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vous n'avez pas accès à cette candidature",
-        )
-
-    if not os.path.exists(candidature.cv_path):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fichier CV introuvable sur le serveur")
-
-    return FileResponse(
-        path=candidature.cv_path,
-        filename=candidature.cv_filename,
-        media_type="application/octet-stream",
-    )
