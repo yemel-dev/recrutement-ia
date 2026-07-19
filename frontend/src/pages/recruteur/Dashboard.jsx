@@ -62,7 +62,7 @@ export default function Dashboard() {
                 ))}
               </div>
               <div className="offre-admin-actions">
-                <Link to={`/recruteur/offres/${offre.id}/classement`}>Voir les candidatures →</Link>
+                <Link to={`/recruteur/offres/${offre.id}/classement`}>Candidatures →</Link>
                 <Link to={`/recruteur/offres/${offre.id}/modifier`}>Modifier</Link>
                 {offre.is_active && (
                   <button type="button" className="btn-danger-link" onClick={() => handleDesactiver(offre.id)}>
