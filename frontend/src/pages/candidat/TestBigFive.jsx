@@ -15,7 +15,8 @@ export default function TestBigFive() {
 
   useEffect(() => {
     api.get("/personality-tests/questions")
-      .then((res) => setQuestions(res.data))
+    //API renvoie { "questions": [...] } un objet qui contient un tableau, pas le tableau directement. En faisant setQuestions(res.data), questions devient l'objet entier {questions: [...]}, pas un tableau. Du coup :
+      .then((res) => setQuestions(res.data.questions))
       .catch(() => setLoadError("Impossible de charger le test pour le moment."));
   }, []);
 
@@ -55,8 +56,8 @@ export default function TestBigFive() {
         <div className="q-progress-bar">
           <div className="q-progress-fill" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
         </div>
-
-        <h2>{question.text}</h2>
+        
+        <h2>{question.texte}</h2>
 
         {error && <p className="error">{error}</p>}
 
