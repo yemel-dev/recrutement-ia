@@ -247,3 +247,41 @@ class TestObtenirCandidature:
     def test_candidature_inexistante_404(self, client, candidat_token):
         r = client.get("/applications/9999", headers=entetes(candidat_token))
         assert r.status_code == 404
+
+
+# ─── GET /applications/{id}/cv ────────────────────────────────────────────────
+
+class TestTelechargerCv:
+
+    def test_candidat_proprietaire_peut_telecharger(self, client, candidat_token, offre_id):
+        candidature = client.post(
+            "/applications", data={"offre_id": offre_id}, files=fichier_cv(), headers=entetes(candidat_token)
+        ).json()
+        r = client.get(f"/applications/{candidature['id']}/cv", headers=entetes(candidat_token))
+        assert r.status_code == 200
+        assert len(r.content) > 0
+
+    def test_recruteur_de_loffre_peut_telecharger(self, client, candidat_token, offre_id, recruteur_token):
+        candidature = client.post(
+            "/applications", data={"offre_id": offre_id}, files=fichier_cv(), headers=entetes(candidat_token)
+        ).json()
+        r = client.get(f"/applications/{candidature['id']}/cv", headers=entetes(recruteur_token))
+        assert r.status_code == 200
+
+    def test_autre_candidat_ne_peut_pas_telecharger(self, client, candidat_token, offre_id, autre_candidat_token):
+        candidature = client.post(
+            "/applications", data={"offre_id": offre_id}, files=fichier_cv(), headers=entetes(candidat_token)
+        ).json()
+        r = client.get(f"/applications/{candidature['id']}/cv", headers=entetes(autre_candidat_token))
+        assert r.status_code == 403
+
+    def test_sans_token_refuse(self, client, offre_id, candidat_token):
+        candidature = client.post(
+            "/applications", data={"offre_id": offre_id}, files=fichier_cv(), headers=entetes(candidat_token)
+        ).json()
+        r = client.get(f"/applications/{candidature['id']}/cv")
+        assert r.status_code == 401
+
+    def test_candidature_inexistante_404(self, client, candidat_token):
+        r = client.get("/applications/9999/cv", headers=entetes(candidat_token))
+        assert r.status_code == 404
