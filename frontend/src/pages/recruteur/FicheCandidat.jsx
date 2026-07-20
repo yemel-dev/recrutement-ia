@@ -59,6 +59,12 @@ export default function FicheCandidat() {
   } catch {
     competencesDetectees = [];
   }
+  // On n'affiche que les competences qui correspondent reellement a celles
+  // requises par l'offre, plutot que la liste brute (parfois bruitee par de
+  // faux positifs du module NLP — voir chapitre 5 du rapport).
+  const competencesPertinentes = competencesDetectees.filter((comp) =>
+    offre?.competences_requises?.includes(comp)
+  );
 
   return (
     <Layout title="Fiche candidat">
@@ -84,8 +90,8 @@ export default function FicheCandidat() {
             </div>
           )}
 
-          {/* NOUVEAU : detail de ce que le pipeline NLP a extrait */}
-          {(candidature.formation_niveau || candidature.experience_annees != null || competencesDetectees.length > 0) && (
+          {/* Detail de ce que le pipeline NLP a extrait, filtre sur les competences pertinentes pour l'offre */}
+          {(candidature.formation_niveau || candidature.experience_annees != null || competencesPertinentes.length > 0) && (
             <div style={{ background: "var(--bg-soft)", borderRadius: 8, padding: "10px 12px", margin: "10px 0" }}>
               <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "0 0 6px", fontWeight: 600 }}>
                 ANALYSE DU CV (NLP)
@@ -96,14 +102,19 @@ export default function FicheCandidat() {
               {candidature.experience_annees != null && (
                 <p style={{ fontSize: 13, margin: "2px 0" }}>Expérience détectée : <b>{candidature.experience_annees} an(s)</b></p>
               )}
-              {competencesDetectees.length > 0 && (
-                <div style={{ marginTop: 6, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {competencesDetectees.map((comp) => (
-                    <span key={comp} style={{
-                      background: "white", border: "1px solid var(--border)", borderRadius: 999, padding: "2px 8px", fontSize: 11.5,
-                    }}>{comp}</span>
-                  ))}
-                </div>
+              {competencesPertinentes.length > 0 && (
+                <>
+                  <p style={{ fontSize: 11.5, color: "var(--text-muted)", margin: "8px 0 4px" }}>
+                    Compétences correspondant à l'offre :
+                  </p>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {competencesPertinentes.map((comp) => (
+                      <span key={comp} style={{
+                        background: "white", border: "1px solid var(--border)", borderRadius: 999, padding: "2px 8px", fontSize: 11.5,
+                      }}>{comp}</span>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}

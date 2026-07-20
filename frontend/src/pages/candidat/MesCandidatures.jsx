@@ -53,6 +53,13 @@ export default function MesCandidatures() {
             } catch {
               competencesDetectees = [];
             }
+            // On n'affiche que les competences detectees qui correspondent
+            // reellement a celles requises par l'offre (evite d'afficher la
+            // liste brute, parfois bruitee par de faux positifs du module NLP
+            // — voir chapitre 5 du rapport).
+            const competencesPertinentes = competencesDetectees.filter((comp) =>
+              offresParId[c.offre_id]?.competences_requises?.includes(comp)
+            );
 
             return (
               <div key={c.id} className="candidature-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 8 }}>
@@ -73,13 +80,18 @@ export default function MesCandidatures() {
                   <div style={{ fontSize: 12.5, color: "var(--text-secondary)" }}>
                     {c.formation_niveau && <span>Formation détectée : <b>{c.formation_niveau}</b> · </span>}
                     {c.experience_annees != null && <span>Expérience détectée : <b>{c.experience_annees} an(s)</b></span>}
-                    {competencesDetectees.length > 0 && (
-                      <div style={{ marginTop: 4, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {competencesDetectees.map((comp) => (
-                          <span key={comp} style={{
-                            background: "var(--bg-soft)", borderRadius: 999, padding: "2px 8px", fontSize: 11.5,
-                          }}>{comp}</span>
-                        ))}
+                    {competencesPertinentes.length > 0 && (
+                      <div style={{ marginTop: 4 }}>
+                        <p style={{ margin: "4px 0 4px", fontSize: 11.5, color: "var(--text-muted)" }}>
+                          Compétences correspondant à l'offre :
+                        </p>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {competencesPertinentes.map((comp) => (
+                            <span key={comp} style={{
+                              background: "var(--bg-soft)", borderRadius: 999, padding: "2px 8px", fontSize: 11.5,
+                            }}>{comp}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
