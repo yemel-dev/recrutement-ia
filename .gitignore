@@ -6,5 +6,7 @@ venv/
 .venv/
 node_modules/
 .DS_Store
-test_temp.db
 *.db
+# Fichiers de test locaux (données, pas du code)
+tests/*.pdf
+tests/*.docx
