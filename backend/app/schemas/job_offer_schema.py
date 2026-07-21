@@ -1,6 +1,7 @@
 from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import List
+from typing import Optional
 
 
 # ─── Schéma de base ───────────────────────────────────────────────────────────
@@ -62,3 +63,20 @@ class JobOfferResponse(JobOfferBase):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+# Mise à jour partielle
+
+class JobOfferUpdate(BaseModel):
+    titre: Optional[str] = None
+    description: Optional[str] = None
+    competences_requises: Optional[List[str]] = None
+    experience_requise: Optional[int] = None
+    ocean_O: Optional[float] = None
+    ocean_C: Optional[float] = None
+    ocean_E: Optional[float] = None
+    ocean_A: Optional[float] = None
+    ocean_N: Optional[float] = None
+    poids_competences: Optional[float] = None
+    poids_experience: Optional[float] = None
+    poids_formation: Optional[float] = None
+    poids_personnalite: Optional[float] = None

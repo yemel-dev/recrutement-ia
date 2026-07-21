@@ -13,6 +13,13 @@ class ApplicationResponse(BaseModel):
     cv_filename: str
     statut: ApplicationStatus
 
+    # Resultats du pipeline NLP (None si l'analyse n'est pas encore faite)
+    # competences_extraites est stocke en base comme une chaine JSON -> le
+    # frontend doit faire JSON.parse() dessus.
+    competences_extraites: Optional[str] = None
+    experience_annees: Optional[float] = None
+    formation_niveau: Optional[str] = None
+
     # Scores (None si pas encore analysé)
     score_competences: Optional[float] = None
     score_experience: Optional[float] = None

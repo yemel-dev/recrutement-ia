@@ -15,8 +15,7 @@ export default function TestBigFive() {
 
   useEffect(() => {
     api.get("/personality-tests/questions")
-      // L'API renvoie { "questions": [...] }, un objet qui CONTIENT un
-      // tableau -> il faut bien prendre res.data.questions, pas res.data.
+    //API renvoie { "questions": [...] } un objet qui contient un tableau, pas le tableau directement. En faisant setQuestions(res.data), questions devient l'objet entier {questions: [...]}, pas un tableau. Du coup :
       .then((res) => setQuestions(res.data.questions))
       .catch(() => setLoadError("Impossible de charger le test pour le moment."));
   }, []);
@@ -39,20 +38,7 @@ export default function TestBigFive() {
       await api.post("/personality-tests", { reponses: finalReponses });
       navigate("/candidat/candidatures");
     } catch (err) {
-      // Le test Big Five ne se passe qu'UNE SEULE FOIS par candidat (pas une
-      // fois par offre — le profil de personnalité ne change pas selon le
-      // poste vise). Si le candidat postule a une 2e offre et retombe sur ce
-      // formulaire, le backend refuse normalement une 2e soumission (400).
-      // Ce n'est pas une vraie erreur : on laisse simplement passer le
-      // candidat, son profil existant sera utilise pour le scoring.
-      const dejaPasse = err.response?.status === 400 &&
-        err.response?.data?.detail?.includes("déjà passé le test");
-
-      if (dejaPasse) {
-        navigate("/candidat/candidatures");
-      } else {
-        setError("Erreur lors de l'envoi du test.");
-      }
+      setError("Erreur lors de l'envoi du test.");
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +56,7 @@ export default function TestBigFive() {
         <div className="q-progress-bar">
           <div className="q-progress-fill" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
         </div>
-
+        
         <h2>{question.texte}</h2>
 
         {error && <p className="error">{error}</p>}
