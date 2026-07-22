@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titre %}Votre score est prêt{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Analyse terminée</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Bonjour {{ prenom }},<br><br>
+  L'analyse de votre candidature pour l'offre <strong>« {{ offre_titre }} »</strong> est
+  terminée. Votre score global est de :
+</p>
+<p style="text-align:center; margin:24px 0;">
+  <span style="display:inline-block; background-color:#ecfdf5; color:#059669; font-size:28px; font-weight:bold; padding:12px 28px; border-radius:8px;">
+    {{ "%.0f"|format(score_global * 100) }} / 100
+  </span>
+</p>
+<p style="text-align:center; margin:28px 0;">
+  <a href="{{ frontend_url }}/mes-candidatures"
+     style="background-color:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-size:14px; font-weight:bold;">
+    Voir le détail de mon score
+  </a>
+</p>
+{% endblock %}

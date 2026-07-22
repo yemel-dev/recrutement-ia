@@ -25,6 +25,7 @@ from app.models.application import Application, ApplicationStatus
 from app.schemas.schemas import ApplicationResponse
 from app.services.nlp.nlp_pipeline import analyser_cv
 from app.services.ranking_service import tenter_calculer_score
+from app.services import email_service
 from app.routers.auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/applications", tags=["Candidatures"])
@@ -217,6 +218,17 @@ def postuler(
         competences_offre,
     )
 
+    # ── Notifications email ──────────────────────────────────────────────────
+    background_tasks.add_task(
+        email_service.envoyer_candidature_recue,
+        current_user.email, current_user.prenom, offre.titre, file.filename,
+    )
+    background_tasks.add_task(
+        email_service.envoyer_nouvelle_candidature_recruteur,
+        offre.recruteur.email, offre.recruteur.prenom, offre.titre, offre.id,
+        current_user.nom, current_user.prenom,
+    )
+
     # ── Réponse immédiate au candidat ─────────────────────────────────────────
     return nouvelle_candidature
 
@@ -342,6 +354,7 @@ def telecharger_cv(
 @router.patch("/{application_id}/moderation", response_model=ApplicationResponse, tags=["Administration"])
 def moderer_candidature(
     application_id: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.admin)),
 ):
@@ -359,4 +372,10 @@ def moderer_candidature(
     candidature.statut = ApplicationStatus.rejete
     db.commit()
     db.refresh(candidature)
+
+    background_tasks.add_task(
+        email_service.envoyer_candidature_rejetee,
+        candidature.candidat.email, candidature.candidat.prenom, candidature.offre.titre,
+    )
+
     return candidature

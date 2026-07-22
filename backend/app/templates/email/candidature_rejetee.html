@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titre %}Mise à jour de votre candidature{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Mise à jour de votre candidature</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Bonjour {{ prenom }},<br><br>
+  Votre candidature pour l'offre <strong>« {{ offre_titre }} »</strong> n'a pas été retenue.
+</p>
+<p style="color:#6b7280; font-size:13px;">
+  Nous vous remercions pour l'intérêt porté à cette offre et vous invitons à consulter
+  les autres opportunités disponibles sur la plateforme.
+</p>
+{% endblock %}

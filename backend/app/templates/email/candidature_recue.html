@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titre %}Candidature reçue{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Candidature bien reçue</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Bonjour {{ prenom }},<br><br>
+  Nous avons bien reçu votre candidature pour l'offre
+  <strong>« {{ offre_titre }} »</strong>, avec le fichier <strong>{{ cv_filename }}</strong>.
+</p>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Votre CV est en cours d'analyse automatique. Vous recevrez un email dès que votre score
+  sera disponible.
+</p>
+<p style="text-align:center; margin:28px 0;">
+  <a href="{{ frontend_url }}/mes-candidatures"
+     style="background-color:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-size:14px; font-weight:bold;">
+    Suivre ma candidature
+  </a>
+</p>
+{% endblock %}

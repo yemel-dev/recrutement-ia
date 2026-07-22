@@ -26,6 +26,7 @@ from app.models.job_offer import JobOffer
 from app.models.ranking import Ranking
 from app.schemas.schemas import ScoringInput
 from app.services.scoring_service import scorer_candidat
+from app.services import email_service
 import json
 
 
@@ -110,6 +111,20 @@ def tenter_calculer_score(db: Session, application: Application) -> bool:
     db.commit()
 
     _recalculer_classement(db, offre.id)
+
+    # ── Notification : le score du candidat est prêt ─────────────────────────
+    # Envoyée directement ici (pas via BackgroundTasks) : cette fonction est
+    # elle-même déjà appelée depuis un contexte asynchrone/en arrière-plan
+    # dans les deux endroits où elle est utilisée (fin du pipeline NLP dans
+    # applications.py, et juste après le test Big Five dans personality.py).
+    # Un seul point d'envoi ici évite de dupliquer l'appel des deux côtés.
+    email_service.envoyer_score_pret(
+        destinataire=application.candidat.email,
+        prenom=application.candidat.prenom,
+        offre_titre=offre.titre,
+        score_global=application.score_global,
+    )
+
     return True
 
 

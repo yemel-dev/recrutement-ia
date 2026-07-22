@@ -12,7 +12,7 @@ Endpoints admin (token admin requis) :
     PATCH  /admin/users/{id}     → activer/désactiver un utilisateur
     DELETE /admin/users/{id}     → supprimer un utilisateur
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -25,6 +25,7 @@ from app.services.auth_service import (
     obtenir_utilisateur_par_email,
     decoder_token,
 )
+from app.services import email_service
 from app.models.user import User, UserRole
 
 router = APIRouter(tags=["Authentification"])
@@ -88,7 +89,7 @@ get_current_admin = require_roles(UserRole.admin)
 
 @router.post("/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED,
              tags=["Authentification"])
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
+def register(user_data: UserCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     Inscription publique — crée un compte CANDIDAT uniquement.
     Le rôle est toujours forcé à 'candidat', peu importe ce qui est envoyé.
@@ -108,6 +109,9 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         mot_de_passe=user_data.password,
         role=UserRole.candidat,      # ← toujours forcé candidat
     )
+
+    background_tasks.add_task(email_service.envoyer_bienvenue, user.email, user.prenom)
+
     return user
 
 
@@ -152,6 +156,7 @@ def get_me(current_user: User = Depends(get_current_user)):
              tags=["Administration"])
 def admin_creer_utilisateur(
     user_data: UserCreateAdmin,
+    background_tasks: BackgroundTasks,
     db:         Session = Depends(get_db),
     _:          User    = Depends(get_current_admin),
 ):
@@ -174,6 +179,14 @@ def admin_creer_utilisateur(
         mot_de_passe=user_data.password,
         role=user_data.role,
     )
+
+    # On envoie le mot de passe EN CLAIR reçu dans la requête (user_data.password),
+    # jamais le hash stocké en base — c'est le seul moment où il est disponible.
+    background_tasks.add_task(
+        email_service.envoyer_compte_cree_admin,
+        user.email, user.prenom, user.role.value, user_data.password,
+    )
+
     return user
 
 
@@ -189,6 +202,7 @@ def admin_lister_utilisateurs(
 @router.patch("/admin/users/{user_id}", response_model=UserResponse, tags=["Administration"])
 def admin_toggle_actif(
     user_id: int,
+    background_tasks: BackgroundTasks,
     db:      Session = Depends(get_db),
     _:       User    = Depends(get_current_admin),
 ):
@@ -202,6 +216,11 @@ def admin_toggle_actif(
     user.is_active = not user.is_active
     db.commit()
     db.refresh(user)
+
+    # On notifie seulement quand le compte VIENT d'être désactivé, pas à la réactivation
+    if not user.is_active:
+        background_tasks.add_task(email_service.envoyer_compte_desactive, user.email, user.prenom)
+
     return user
 
 

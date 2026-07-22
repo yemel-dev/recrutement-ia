@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titre %}Bienvenue sur Recrutement IA{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Bienvenue, {{ prenom }} !</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Votre compte candidat a bien été créé sur Recrutement IA. Vous pouvez dès à présent
+  parcourir les offres disponibles, postuler, et passer le test de personnalité Big Five
+  pour compléter votre profil.
+</p>
+<p style="text-align:center; margin:28px 0;">
+  <a href="{{ frontend_url }}/offres"
+     style="background-color:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-size:14px; font-weight:bold;">
+    Voir les offres disponibles
+  </a>
+</p>
+<p style="color:#6b7280; font-size:13px;">À très vite !</p>
+{% endblock %}

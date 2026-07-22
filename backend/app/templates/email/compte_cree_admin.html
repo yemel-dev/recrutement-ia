@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block titre %}Votre compte a été créé{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Votre compte a été créé</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Bonjour {{ prenom }},<br><br>
+  Un compte <strong>{{ role }}</strong> vient d'être créé pour vous sur Recrutement IA.
+  Voici vos identifiants de connexion :
+</p>
+<table role="presentation" style="width:100%; background-color:#f9fafb; border-radius:6px; margin:20px 0;" cellpadding="12">
+  <tr>
+    <td style="font-size:14px; color:#374151;"><strong>Email&nbsp;:</strong> {{ email }}</td>
+  </tr>
+  <tr>
+    <td style="font-size:14px; color:#374151;"><strong>Mot de passe provisoire&nbsp;:</strong> {{ mot_de_passe }}</td>
+  </tr>
+</table>
+<p style="color:#b91c1c; font-size:13px; line-height:1.5;">
+  Pour votre sécurité, nous vous recommandons de changer ce mot de passe dès votre
+  première connexion.
+</p>
+<p style="text-align:center; margin:28px 0;">
+  <a href="{{ frontend_url }}/login"
+     style="background-color:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-size:14px; font-weight:bold;">
+    Me connecter
+  </a>
+</p>
+{% endblock %}

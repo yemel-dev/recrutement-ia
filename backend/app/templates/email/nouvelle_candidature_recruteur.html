@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titre %}Nouvelle candidature reçue{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Nouvelle candidature</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Bonjour {{ recruteur_prenom }},<br><br>
+  <strong>{{ candidat_prenom }} {{ candidat_nom }}</strong> vient de postuler à votre offre
+  <strong>« {{ offre_titre }} »</strong>.
+</p>
+<p style="text-align:center; margin:28px 0;">
+  <a href="{{ frontend_url }}/recruteur/offres/{{ offre_id }}/classement"
+     style="background-color:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-size:14px; font-weight:bold;">
+    Voir le classement des candidats
+  </a>
+</p>
+{% endblock %}

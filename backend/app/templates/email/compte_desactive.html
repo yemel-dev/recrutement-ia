@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block titre %}Compte désactivé{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Votre compte a été désactivé</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Bonjour {{ prenom }},<br><br>
+  Votre compte Recrutement IA vient d'être désactivé par un administrateur.
+  Vous ne pourrez plus vous connecter tant qu'il ne sera pas réactivé.
+</p>
+<p style="color:#6b7280; font-size:13px;">
+  Si vous pensez qu'il s'agit d'une erreur, contactez le support.
+</p>
+{% endblock %}
