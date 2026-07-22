@@ -1,156 +1,235 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const navCandidat = [
-  { to: "/candidat/offres", label: "Offres disponibles", icon: "briefcase" },
-  { to: "/candidat/candidatures", label: "Mes candidatures", icon: "list" },
+  { path: "/candidat/dashboard",        label: "Tableau de bord" },
+  { path: "/candidat/offres",           label: "Offres d'emploi" },
+  { path: "/candidat/mes-candidatures", label: "Mes candidatures" },
+  { path: "/candidat/test-big-five",    label: "Test Big Five" },
 ];
 
 const navRecruteur = [
-  { to: "/recruteur/dashboard", label: "Tableau de bord", icon: "grid" },
-  { to: "/recruteur/offres/nouvelle", label: "Publier une offre", icon: "plus" },
-  { to: "/recruteur/candidatures", label: "Toutes les candidatures", icon: "list" },
+  { path: "/recruteur/dashboard",   label: "Overview" },
+  { path: "/recruteur/offres",      label: "Mes offres" },
+  { path: "/recruteur/creer-offre", label: "Créer offre" },
+  { path: "/recruteur/candidatures",label: "Candidatures" },
 ];
 
-const icons = {
-  briefcase: "M6 7V5a2 2 0 012-2h4a2 2 0 012 2v2m-9 0h14a1 1 0 011 1v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8a1 1 0 011-1z",
-  list: "M4 6h16M4 12h16M4 18h7",
-  grid: "M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h6v6h-6v-6z",
-  plus: "M12 4v16m8-8H4",
-  search: "M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z",
-  bell: "M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 00-4-5.66V5a2 2 0 10-4 0v.34A6 6 0 006 11v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
-};
+const navAdmin = [
+  { path: "/admin/dashboard",     label: "Overview" },
+  { path: "/admin/utilisateurs",  label: "Utilisateurs" },
+];
 
-function Icon({ name, size = 18 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d={icons[name]} />
-    </svg>
-  );
-}
-
-export default function Layout({ children, title, subtitle, onSearch, searchPlaceholder, notifications = [] }) {
+export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const location = useLocation();
-  const [showNotifs, setShowNotifs] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
-  const notifRef = useRef(null);
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const nav = user?.role === "recruteur" ? navRecruteur : navCandidat;
-  const initiale = user?.email?.[0]?.toUpperCase() || "?";
+  const navItems =
+    user?.role === "recruteur" ? navRecruteur :
+    user?.role === "admin"     ? navAdmin     :
+    navCandidat;
 
-  const handleSearchChange = (e) => {
-    setSearchValue(e.target.value);
-    onSearch?.(e.target.value);
-  };
-
+  // Ferme le dropdown si clic extérieur
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setShowNotifs(false);
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setMenuOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-icon">IA</div>
-          <div>
-            <span>RecrutIA</span>
-            <p className="brand-subtitle">Recrutement intelligent</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-100 flex flex-col">
 
-        <p className="nav-section-label">
-          {user?.role === "recruteur" ? "Espace recruteur" : "Espace candidat"}
-        </p>
-        <nav>
-          {nav.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={`nav-link ${location.pathname === item.to ? "active" : ""}`}
-            >
-              <Icon name={item.icon} />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      {/* ── TOPBAR style Zodex ────────────────────────────────────────────── */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
 
-        <div className="sidebar-footer">
-          <div className="user-chip">
-            <div className="avatar">{initiale}</div>
-            <div className="user-info">
-              <span className="user-email">{user?.email}</span>
-              <span className="user-role">{user?.role}</span>
+          {/* Logo */}
+          <div className="flex items-center gap-2 flex-shrink-0 mr-8">
+            <div className="w-7 h-7 bg-lime-500 rounded-lg flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
             </div>
+            <span className="font-extrabold text-gray-900 text-base tracking-tight">RecrutIA</span>
           </div>
-          <button className="logout-btn" onClick={logout}>Déconnexion</button>
-        </div>
-      </aside>
 
-      <div className="main-area">
-        <header className="topbar">
-          <div className="topbar-breadcrumb">
-            <span>RecrutIA</span>
-            <span className="breadcrumb-sep">/</span>
-            <b>{title}</b>
-          </div>
-          <div className="topbar-actions">
-            {onSearch && (
-              <div className="topbar-search">
-                <Icon name="search" size={15} />
-                <input
-                  placeholder={searchPlaceholder || "Rechercher..."}
-                  value={searchValue}
-                  onChange={handleSearchChange}
-                />
-              </div>
+          {/* Nav centrale — style Zodex : lien actif souligné vert */}
+          <nav className="hidden md:flex items-center gap-1 flex-1">
+            {navItems.map((item) => {
+              const isActive =
+                location.pathname === item.path ||
+                location.pathname.startsWith(item.path + "/");
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`
+                    relative px-4 py-4 text-sm font-semibold transition-colors duration-200
+                    ${isActive
+                      ? "text-lime-500"
+                      : "text-gray-500 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  {item.label}
+                  {/* Soulignement actif comme Zodex */}
+                  {isActive && (
+                    <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-lime-500 rounded-full" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Droite */}
+          <div className="flex items-center gap-2">
+
+            {/* Bouton + Post Job style Zodex */}
+            {user?.role === "recruteur" && (
+              <Link
+                to="/recruteur/creer-offre"
+                className="hidden sm:flex items-center gap-1.5 bg-lime-500 hover:bg-lime-400 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all duration-200"
+              >
+                <span className="text-base leading-none">+</span>
+                Créer une offre
+              </Link>
             )}
 
-            <div style={{ position: "relative" }} ref={notifRef}>
+            {/* Icône notification */}
+            <button className="relative w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors duration-200">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-lime-500 rounded-full border-2 border-white" />
+            </button>
+
+            {/* Icône message */}
+            <button className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors duration-200">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-500">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+            </button>
+
+            {/* Avatar + dropdown style Zodex */}
+            <div className="relative" ref={dropdownRef}>
               <button
-                className="topbar-icon-btn"
-                type="button"
-                onClick={() => setShowNotifs((v) => !v)}
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 hover:bg-gray-50 px-2 py-1.5 rounded-lg transition-colors duration-200"
               >
-                <Icon name="bell" size={17} />
-                {notifications.length > 0 && <span className="notif-dot" />}
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                  {user?.prenom?.[0]?.toUpperCase() || "U"}
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
               </button>
 
-              {showNotifs && (
-                <div className="notif-dropdown">
-                  <p className="notif-dropdown-title">Résumé</p>
-                  {notifications.length === 0 ? (
-                    <p className="notif-empty">Rien à signaler pour l'instant.</p>
-                  ) : (
-                    notifications.map((n, i) => (
-                      <div key={i} className="notif-item">{n}</div>
-                    ))
-                  )}
-                  <p className="notif-footnote">
-                    Résumé calculé à partir de tes données actuelles — pas encore de notifications en temps réel.
-                  </p>
+              {/* Dropdown — exactement style Zodex */}
+              {menuOpen && (
+                <div className="absolute right-0 top-11 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
+
+                  {/* Header profil */}
+                  <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-50">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                      {user?.prenom?.[0]?.toUpperCase() || "U"}
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-bold text-gray-900 truncate">
+                        {user?.prenom} {user?.nom}
+                      </p>
+                      <p className="text-xs text-gray-400">Edit Profile</p>
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400 ml-auto flex-shrink-0">
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </div>
+
+                  {/* Items menu */}
+                  <div className="py-1">
+                    {user?.role === "recruteur" && (
+                      <Link to="/recruteur/offres"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors duration-150"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
+                        Mes offres
+                      </Link>
+                    )}
+                    {user?.role === "candidat" && (
+                      <Link to="/candidat/mes-candidatures"
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors duration-150"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        Mon CV / Candidatures
+                      </Link>
+                    )}
+
+                    {/* Dark mode toggle (visuel) */}
+                    <div className="flex items-center justify-between px-4 py-2.5">
+                      <div className="flex items-center gap-3">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                        <span className="text-sm text-gray-600">Dark Mode</span>
+                      </div>
+                      <div className="w-9 h-5 bg-gray-200 rounded-full relative">
+                        <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow-sm" />
+                      </div>
+                    </div>
+
+                    <div className="border-t border-gray-50 mt-1 pt-1">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors duration-150"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+                          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                        Log out
+                      </button>
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
 
-            <div className="avatar avatar-sm">{initiale}</div>
           </div>
-        </header>
-        <main className="content">
-          {subtitle && <p className="page-subtitle">{subtitle}</p>}
-          {children}
-        </main>
-        <footer className="app-footer">
-          Recrutement Intelligent IA — Master IA, Université de Dschang © 2026
-        </footer>
-      </div>
+        </div>
+      </header>
+
+      {/* ── PAGE CONTENT ─────────────────────────────────────────────────── */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+        {children}
+      </main>
+
+      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
+      <footer className="bg-white border-t border-gray-100 py-3 text-center">
+        <p className="text-xs text-gray-400">
+          RecrutIA · Master Intelligence Artificielle · Université de Dschang © 2026
+        </p>
+      </footer>
+
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
-import Layout from "../../components/Layout";
 
 const SOUS_SCORES = [
   { key: "score_competences", label: "Compétences" },
@@ -22,12 +21,11 @@ export default function FicheCandidat() {
       .catch(() => setError("Candidature introuvable."));
   }, [applicationId]);
 
-  if (error) return <Layout title="Fiche candidat"><StatusMessage type="error" message={error} /></Layout>;
-  if (!candidature) return <Layout title="Fiche candidat"><StatusMessage type="loading" /></Layout>;
+  if (error) return <StatusMessage type="error" message={error} />;
+  if (!candidature) return <StatusMessage type="loading" />;
 
   return (
-    <Layout title="Fiche candidat">
-      <div className="fiche-candidat">
+    <div className="fiche-candidat">
         <p className="location" style={{ marginBottom: 16 }}>Offre #{candidature.offre_id}</p>
 
         <div className="offre-card" style={{ display: "block", cursor: "default" }}>
@@ -61,6 +59,5 @@ export default function FicheCandidat() {
           )}
         </div>
       </div>
-    </Layout>
   );
 }

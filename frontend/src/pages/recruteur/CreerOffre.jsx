@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
-import Layout from "../../components/Layout";
 
 const OCEAN_DIMENSIONS = [
   { key: "ocean_O", label: "Ouverture" },
@@ -60,8 +59,7 @@ export default function CreerOffre() {
   };
 
   return (
-    <Layout title="Publier une offre">
-      <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
+    <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
         <label>Titre du poste</label>
         <input value={titre} onChange={(e) => setTitre(e.target.value)} required />
 
@@ -100,6 +98,5 @@ export default function CreerOffre() {
           {submitting ? "Publication..." : "Publier l'offre"}
         </button>
       </form>
-    </Layout>
   );
 }

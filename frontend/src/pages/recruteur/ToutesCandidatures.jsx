@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
-import Layout from "../../components/Layout";
 
 export default function ToutesCandidatures() {
   const [candidatures, setCandidatures] = useState([]);
@@ -39,7 +38,7 @@ export default function ToutesCandidatures() {
   );
 
   return (
-    <Layout title="Toutes les candidatures" onSearch={setSearch} searchPlaceholder="Nom, poste...">
+    <>
       {loading && <StatusMessage type="loading" />}
       {!loading && error && <StatusMessage type="error" message={error} />}
       {!loading && !error && filtrees.length === 0 && (
@@ -67,6 +66,6 @@ export default function ToutesCandidatures() {
           ))}
         </div>
       )}
-    </Layout>
+    </>
   );
 }

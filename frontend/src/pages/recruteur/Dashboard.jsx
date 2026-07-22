@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
-import Layout from "../../components/Layout";
 
 export default function Dashboard() {
   const [prenom, setPrenom] = useState("");
@@ -53,8 +52,8 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <Layout title="Tableau de bord"><StatusMessage type="loading" /></Layout>;
-  if (error) return <Layout title="Tableau de bord"><StatusMessage type="error" message={error} /></Layout>;
+  if (loading) return <StatusMessage type="loading" />;
+  if (error) return <StatusMessage type="error" message={error} />;
 
   const offresFiltrees = offres.filter((o) =>
     o.titre.toLowerCase().includes(search.toLowerCase())
@@ -78,12 +77,7 @@ export default function Dashboard() {
   };
 
   return (
-    <Layout
-      title="Tableau de bord"
-      onSearch={setSearch}
-      searchPlaceholder="Rechercher une offre..."
-      notifications={notifications}
-    >
+    <>
       <div className="hero-banner">
         <div>
           <h2 className="hero-title">Bonjour{prenom ? `, ${prenom}` : ""} 👋</h2>
@@ -179,6 +173,6 @@ export default function Dashboard() {
           )}
         </div>
       </div>
-    </Layout>
+    </>
   );
 }

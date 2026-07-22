@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
-import Layout from "../../components/Layout";
 
 const OCEAN_DIMENSIONS = [
   { key: "ocean_O", label: "Ouverture" },
@@ -78,12 +77,11 @@ export default function ModifierOffre() {
     }
   };
 
-  if (loadError) return <Layout title="Modifier l'offre"><StatusMessage type="error" message={loadError} /></Layout>;
-  if (loadingOffre) return <Layout title="Modifier l'offre"><StatusMessage type="loading" /></Layout>;
+  if (loadError) return <StatusMessage type="error" message={loadError} />;
+  if (loadingOffre) return <StatusMessage type="loading" />;
 
   return (
-    <Layout title="Modifier l'offre">
-      <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
+    <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
         <label>Titre du poste</label>
         <input value={titre} onChange={(e) => setTitre(e.target.value)} required />
 
@@ -122,6 +120,5 @@ export default function ModifierOffre() {
           {submitting ? "Enregistrement..." : "Enregistrer les modifications"}
         </button>
       </form>
-    </Layout>
   );
 }
