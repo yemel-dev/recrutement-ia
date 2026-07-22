@@ -11,6 +11,7 @@ Comment lancer :
 
 import pytest
 from fastapi.testclient import TestClient
+from tests.conftest import creer_utilisateur_via_admin
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Données de test réutilisables
@@ -45,7 +46,16 @@ OFFRE_VALIDE = {
 # ──────────────────────────────────────────────────────────────────────────────
 
 def obtenir_token(client, user_data):
-    """Inscrit un utilisateur et retourne son token JWT."""
+    """
+    Crée un utilisateur et retourne son token JWT.
+
+    POST /auth/register force toujours le rôle "candidat" (voir routers/auth.py).
+    Pour les comptes recruteur/admin, on passe donc par /admin/users, en
+    s'authentifiant avec le compte admin par défaut créé au démarrage.
+    """
+    if user_data.get("role") in ("recruteur", "admin"):
+        return creer_utilisateur_via_admin(client, user_data)
+
     client.post("/auth/register", json=user_data)
     response = client.post("/auth/login", data={
         "username": user_data["email"],

@@ -13,6 +13,7 @@ chaque lancement de tests, et rend les tests rapides et déterministes.
 import io
 import pytest
 from unittest.mock import patch
+from tests.conftest import creer_utilisateur_via_admin
 
 
 OFFRE_VALIDE = {
@@ -67,15 +68,14 @@ def reponses_completes(valeur=3):
 
 @pytest.fixture
 def recruteur_token(client):
-    client.post("/auth/register", json={
+    # POST /auth/register force toujours le rôle "candidat" (voir routers/auth.py) :
+    # un compte recruteur ne peut être créé que via /admin/users, avec le
+    # compte admin par défaut créé au démarrage de l'app.
+    return creer_utilisateur_via_admin(client, {
         "nom": "Fopa", "prenom": "Marie",
         "email": "recruteur.apps@entreprise.cm",
         "password": "MotDePasse456", "role": "recruteur"
     })
-    login = client.post("/auth/login", data={
-        "username": "recruteur.apps@entreprise.cm", "password": "MotDePasse456"
-    })
-    return login.json()["access_token"]
 
 
 @pytest.fixture
@@ -172,9 +172,18 @@ class TestIntegrationScoring:
     def test_score_calcule_si_big_five_deja_passe(self, client, candidat_token, offre_id):
         # Le candidat passe d'abord le test Big Five...
         client.post("/personality-tests", json={"reponses": reponses_completes()}, headers=entetes(candidat_token))
-        # ...puis postule : le score doit être calculé immédiatement (NLP + Big Five réunis)
+
+        # ...puis postule. POST /applications répond TOUJOURS immédiatement avec
+        # statut="en_attente" (voir la docstring de postuler() dans applications.py) :
+        # l'analyse NLP + le scoring tournent en tâche de fond, même si les deux
+        # conditions (NLP + Big Five) sont déjà réunies au moment de la requête.
         r = client.post("/applications", data={"offre_id": offre_id}, files=fichier_cv(), headers=entetes(candidat_token))
         assert r.status_code == 201
+        candidature = r.json()
+        assert candidature["statut"] == "en_attente"
+
+        # Le score doit donc être vérifié après coup, une fois la tâche de fond terminée.
+        r = client.get(f"/applications/{candidature['id']}", headers=entetes(candidat_token))
         data = r.json()
         assert data["statut"] == "analyse"
         assert data["score_global"] is not None

@@ -97,10 +97,15 @@ class TestRegister:
         assert "password" not in data
         assert "hashed_password" not in data
 
-    def test_inscription_recruteur(self, client, recruteur_data):
+    def test_inscription_ignore_role_envoye(self, client, recruteur_data):
+        """
+        L'inscription publique force toujours le rôle 'candidat', même si
+        un autre rôle (ex: 'recruteur') est envoyé dans la requête.
+        Seul un admin peut créer un recruteur, via POST /admin/users.
+        """
         response = client.post("/auth/register", json=recruteur_data)
         assert response.status_code == 201
-        assert response.json()["role"] == "recruteur"
+        assert response.json()["role"] == "candidat"
 
     def test_email_deja_utilise(self, client, candidat_data):
         client.post("/auth/register", json=candidat_data)

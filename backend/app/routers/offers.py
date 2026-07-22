@@ -7,14 +7,20 @@ Rôle : Endpoints REST pour la gestion des offres d'emploi.
        Seuls les recruteurs peuvent créer et gérer des offres.
 
 Endpoints :
-    POST   /offers/      → Créer une offre (recruteur uniquement)
-    GET    /offers/      → Lister toutes les offres actives
-    GET    /offers/{id}  → Détail d'une offre
-    DELETE /offers/{id}  → Désactiver une offre (recruteur propriétaire)
+    POST   /offers/                    → Créer une offre (recruteur uniquement)
+    GET    /offers/                    → Lister toutes les offres actives
+    GET    /offers/{id}                → Détail d'une offre
+    PUT    /offers/{id}                → Modifier une offre
+    DELETE /offers/{id}                → Désactiver une offre (recruteur propriétaire)
+    GET    /offers/{id}/ranking        → Classement des candidats
+    GET    /offers/{id}/ranking/export → Export CSV du classement
 """
 
+import csv
+import io
 import json
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -24,7 +30,7 @@ from app.models.ranking import Ranking
 from app.models.application import Application
 from app.schemas.job_offer_schema import JobOfferCreate, JobOfferUpdate, JobOfferResponse
 from app.schemas.schemas import RankingResponse
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/offers", tags=["Offres d'emploi"])
 
@@ -33,17 +39,48 @@ router = APIRouter(prefix="/offers", tags=["Offres d'emploi"])
 # Dépendance : vérifier que l'utilisateur est un recruteur
 # ──────────────────────────────────────────────────────────────────────────────
 
-def verifier_recruteur(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Dépendance FastAPI — vérifie que l'utilisateur connecté est un recruteur.
-    Lève une erreur 403 si c'est un candidat.
-    """
-    if current_user.role != UserRole.recruteur:
+verifier_recruteur = require_roles(UserRole.recruteur)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Helpers : contrôle d'accès à une offre
+#
+# Règle métier :
+#   - Lecture (consulter le classement, exporter le CSV) : le recruteur
+#     propriétaire OU un admin (supervision/support).
+#   - Écriture (modifier, désactiver) : le recruteur propriétaire UNIQUEMENT.
+#     L'admin ne modifie pas le contenu métier d'une offre à la place d'un
+#     recruteur — il dispose d'une action de modération séparée (voir plus bas).
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _get_offre_ou_404(db: Session, offre_id: int) -> JobOffer:
+    offre = db.query(JobOffer).filter(JobOffer.id == offre_id).first()
+    if not offre:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Offre {offre_id} introuvable"
+        )
+    return offre
+
+
+def _verifier_lecture_offre(offre: JobOffer, current_user: User) -> None:
+    """Autorise le recruteur propriétaire ou un admin. Lève 403 sinon."""
+    est_proprietaire = offre.recruteur_id == current_user.id
+    est_admin = current_user.role == UserRole.admin
+    if not (est_proprietaire or est_admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Accès réservé aux recruteurs"
+            detail="Vous n'êtes pas le propriétaire de cette offre"
         )
-    return current_user
+
+
+def _verifier_ecriture_offre(offre: JobOffer, current_user: User) -> None:
+    """Autorise uniquement le recruteur propriétaire. Lève 403 sinon."""
+    if offre.recruteur_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas le propriétaire de cette offre"
+        )
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -63,20 +100,7 @@ def creer_offre(
     - Les compétences requises sont stockées en JSON
     - Les poids de scoring doivent totaliser 1.0 (validé par le schéma)
     - Le profil OCEAN idéal doit être entre 0.0 et 1.0
-
-    Body exemple :
-    {
-        "titre": "Ingénieur NLP",
-        "description": "Nous recherchons un expert NLP...",
-        "competences_requises": ["python", "spacy", "machine learning"],
-        "experience_requise": 3,
-        "ocean_O": 0.8, "ocean_C": 0.7, "ocean_E": 0.5,
-        "ocean_A": 0.6, "ocean_N": 0.3,
-        "poids_competences": 0.40, "poids_experience": 0.25,
-        "poids_formation": 0.20, "poids_personnalite": 0.15
-    }
     """
-    # Convertir la liste de compétences en JSON pour la BDD
     competences_json = json.dumps(offre_data.competences_requises)
 
     nouvelle_offre = JobOffer(
@@ -101,9 +125,7 @@ def creer_offre(
     db.commit()
     db.refresh(nouvelle_offre)
 
-    # Reconvertir le JSON en liste pour la réponse
     nouvelle_offre.competences_requises = json.loads(nouvelle_offre.competences_requises)
-
     return nouvelle_offre
 
 
@@ -120,9 +142,8 @@ def lister_offres(
     Retourne toutes les offres d'emploi actives.
     Accessible à tous les utilisateurs connectés (candidats et recruteurs).
     """
-    offres = db.query(JobOffer).filter(JobOffer.is_active == True).all()
+    offres = db.query(JobOffer).filter(JobOffer.is_active == True).all()  # noqa: E712
 
-    # Reconvertir le JSON en liste pour chaque offre
     for offre in offres:
         offre.competences_requises = json.loads(offre.competences_requises)
 
@@ -145,7 +166,7 @@ def obtenir_offre(
     """
     offre = db.query(JobOffer).filter(
         JobOffer.id == offre_id,
-        JobOffer.is_active == True
+        JobOffer.is_active == True  # noqa: E712
     ).first()
 
     if not offre:
@@ -171,35 +192,13 @@ def modifier_offre(
 ):
     """
     Modifie une offre d'emploi existante (mise à jour partielle).
-
-    - Réservé au recruteur propriétaire de l'offre
-    - Seuls les champs fournis dans le body sont modifiés
-    - Si l'un des 4 poids de scoring est modifié, leur somme est revalidée (doit faire 1.0)
-
-    Body exemple (on peut n'envoyer que ce qu'on veut changer) :
-    {
-        "titre": "Ingénieur NLP Senior",
-        "experience_requise": 5
-    }
+    Réservé au recruteur propriétaire de l'offre.
     """
-    offre = db.query(JobOffer).filter(JobOffer.id == offre_id).first()
-
-    if not offre:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Offre {offre_id} introuvable"
-        )
-
-    # Vérifier que le recruteur est bien le propriétaire
-    if offre.recruteur_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vous n'êtes pas le propriétaire de cette offre"
-        )
+    offre = _get_offre_ou_404(db, offre_id)
+    _verifier_ecriture_offre(offre, current_user)
 
     champs_a_modifier = offre_data.model_dump(exclude_unset=True)
 
-    # Convertir la liste de compétences en JSON si elle est modifiée
     if "competences_requises" in champs_a_modifier:
         champs_a_modifier["competences_requises"] = json.dumps(
             champs_a_modifier["competences_requises"]
@@ -208,7 +207,6 @@ def modifier_offre(
     for champ, valeur in champs_a_modifier.items():
         setattr(offre, champ, valeur)
 
-    # Si un des 4 poids a été touché, on revalide que la somme totale fait 1.0
     poids_modifies = {"poids_competences", "poids_experience", "poids_formation", "poids_personnalite"}
     if poids_modifies & champs_a_modifier.keys():
         total_poids = (
@@ -240,24 +238,10 @@ def desactiver_offre(
 ):
     """
     Désactive une offre d'emploi (soft delete — is_active = False).
-
-    - Réservé au recruteur propriétaire de l'offre
-    - L'offre n'est pas supprimée de la BDD (conservation des données)
+    Réservé au recruteur propriétaire de l'offre.
     """
-    offre = db.query(JobOffer).filter(JobOffer.id == offre_id).first()
-
-    if not offre:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Offre {offre_id} introuvable"
-        )
-
-    # Vérifier que le recruteur est bien le propriétaire
-    if offre.recruteur_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vous n'êtes pas le propriétaire de cette offre"
-        )
+    offre = _get_offre_ou_404(db, offre_id)
+    _verifier_ecriture_offre(offre, current_user)
 
     offre.is_active = False
     db.commit()
@@ -273,44 +257,15 @@ def desactiver_offre(
 def obtenir_classement(
     offre_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(verifier_recruteur)
+    current_user: User = Depends(get_current_user)
 ):
     """
     Retourne le classement des candidats pour une offre donnée.
-
-    - Réservé aux recruteurs (token JWT requis)
-    - Les candidats sont triés par score_global décroissant
-    - Retourne les scores détaillés + infos du candidat
-
-    Exemple de réponse :
-    [
-        {
-            "position": 1,
-            "candidat_nom": "Dupont",
-            "candidat_prenom": "Jean",
-            "candidat_email": "jean@test.cm",
-            "score_global": 0.87,
-            "score_competences": 0.90,
-            ...
-        }
-    ]
+    Réservé au recruteur propriétaire de l'offre, ou à un admin (supervision).
     """
-    # Vérifier que l'offre existe
-    offre = db.query(JobOffer).filter(JobOffer.id == offre_id).first()
-    if not offre:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Offre {offre_id} introuvable"
-        )
+    offre = _get_offre_ou_404(db, offre_id)
+    _verifier_lecture_offre(offre, current_user)
 
-    # Vérifier que le recruteur est propriétaire de l'offre
-    if offre.recruteur_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Vous n'êtes pas le propriétaire de cette offre"
-        )
-
-    # Récupérer les rankings triés par position
     rankings = (
         db.query(Ranking)
         .filter(Ranking.offre_id == offre_id)
@@ -321,7 +276,6 @@ def obtenir_classement(
     if not rankings:
         return []
 
-    # Construire la réponse avec les infos du candidat
     resultat = []
     for ranking in rankings:
         candidat = ranking.application.candidat
@@ -338,3 +292,98 @@ def obtenir_classement(
         ))
 
     return resultat
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# GET /offers/{id}/ranking/export — Export CSV du classement
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.get("/{offre_id}/ranking/export")
+def exporter_classement_csv(
+    offre_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Exporte le classement des candidats pour une offre en fichier CSV.
+    Réservé au recruteur propriétaire de l'offre, ou à un admin (supervision).
+    """
+    offre = _get_offre_ou_404(db, offre_id)
+    _verifier_lecture_offre(offre, current_user)
+
+    rankings = (
+        db.query(Ranking)
+        .filter(Ranking.offre_id == offre_id)
+        .order_by(Ranking.position)
+        .all()
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+
+    writer.writerow([
+        "Position",
+        "Nom",
+        "Prénom",
+        "Email",
+        "Score Global (%)",
+        "Score Compétences (%)",
+        "Score Expérience (%)",
+        "Score Formation (%)",
+        "Score Personnalité (%)",
+    ])
+
+    for ranking in rankings:
+        candidat = ranking.application.candidat
+        writer.writerow([
+            ranking.position,
+            candidat.nom,
+            candidat.prenom,
+            candidat.email,
+            round(ranking.score_global * 100, 1),
+            round(ranking.score_competences * 100, 1),
+            round(ranking.score_experience * 100, 1),
+            round(ranking.score_formation * 100, 1),
+            round(ranking.score_personnalite * 100, 1),
+        ])
+
+    output.seek(0)
+
+    titre_safe = offre.titre.replace(" ", "_").replace("/", "-")[:30]
+    nom_fichier = f"classement_{titre_safe}_{offre_id}.csv"
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f"attachment; filename={nom_fichier}",
+            "Content-Type": "text/csv; charset=utf-8",
+        }
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# PATCH /offers/{id}/moderation — Désactivation par un admin (modération)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@router.patch("/{offre_id}/moderation", response_model=JobOfferResponse, tags=["Administration"])
+def moderer_offre(
+    offre_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.admin)),
+):
+    """
+    [ADMIN] Désactive une offre pour modération (contenu inapproprié, litige...).
+
+    Contrairement à `PUT /{id}`, l'admin ne peut PAS modifier le contenu
+    métier de l'offre (titre, description, poids de scoring...) — seulement
+    la désactiver. La création/modification du contenu reste la responsabilité
+    exclusive du recruteur propriétaire.
+    """
+    offre = _get_offre_ou_404(db, offre_id)
+    offre.is_active = False
+    db.commit()
+    db.refresh(offre)
+
+    offre.competences_requises = json.loads(offre.competences_requises)
+    return offre

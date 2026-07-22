@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from datetime import datetime
 from typing import Optional
 from app.models.application import ApplicationStatus
+import json
 
 
 # ─── Réponse candidature ──────────────────────────────────────────────────────
@@ -13,10 +14,8 @@ class ApplicationResponse(BaseModel):
     cv_filename: str
     statut: ApplicationStatus
 
-    # Resultats du pipeline NLP (None si l'analyse n'est pas encore faite)
-    # competences_extraites est stocke en base comme une chaine JSON -> le
-    # frontend doit faire JSON.parse() dessus.
-    competences_extraites: Optional[str] = None
+    # Résultats du pipeline NLP — retournés comme liste (pas comme string JSON)
+    competences_extraites: Optional[list[str]] = None
     experience_annees: Optional[float] = None
     formation_niveau: Optional[str] = None
 
@@ -30,6 +29,32 @@ class ApplicationResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("competences_extraites", mode="before")
+    @classmethod
+    def deserialiser_competences(cls, v):
+        """
+        Convertit automatiquement la string JSON stockée en base
+        en vraie liste Python avant de retourner la réponse au frontend.
+
+        Exemple :
+            '["python", "sql", "docker"]'  →  ["python", "sql", "docker"]
+
+        Comme ça le frontend reçoit directement un tableau JSON propre,
+        sans avoir à faire JSON.parse() lui-même.
+        """
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except (json.JSONDecodeError, ValueError):
+                pass
+        return v
 
 
 # ─── Schéma pour le test Big Five ─────────────────────────────────────────────
@@ -74,7 +99,7 @@ class ScoringInput(BaseModel):
     # Données NLP extraites du CV (par le Membre 2)
     competences_cv: list[str]
     experience_annees: float
-    formation_niveau: str  # "Doctorat", "Master", "Licence", "BTS", "Autre"
+    formation_niveau: str  # "DOCTORAT", "MASTER", "LICENCE", "BTS", "AUTRE"
 
     # Scores OCEAN du candidat
     score_O: float

@@ -150,17 +150,18 @@ def candidat_token(client):
 
 @pytest.fixture
 def recruteur_token(client):
-    """Inscrit un recruteur, se connecte, retourne son token JWT."""
-    client.post("/auth/register", json={
+    """Crée un recruteur via /admin/users, se connecte, retourne son token JWT.
+
+    POST /auth/register force toujours le rôle "candidat" (voir routers/auth.py) :
+    un compte recruteur ne peut être créé que via /admin/users, avec le
+    compte admin par défaut créé au démarrage de l'app.
+    """
+    from tests.conftest import creer_utilisateur_via_admin
+    return creer_utilisateur_via_admin(client, {
         "nom": "Fopa", "prenom": "Marie",
         "email": "recruteur.bigfive@entreprise.cm",
         "password": "MotDePasse456", "role": "recruteur"
     })
-    login = client.post("/auth/login", data={
-        "username": "recruteur.bigfive@entreprise.cm",
-        "password": "MotDePasse456"
-    })
-    return login.json()["access_token"]
 
 
 class TestEndpointGetQuestions:
