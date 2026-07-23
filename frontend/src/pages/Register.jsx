@@ -6,49 +6,42 @@ import heroBg from "../assets/hero-bg.webp";
 
 export default function Register() {
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
   const [form, setForm] = useState({
     nom: "", prenom: "", email: "", password: "", confirmPassword: "",
   });
-  const [error,   setError]   = useState("");
+  const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Inscription classique
+  // ── Inscription classique ─────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     if (form.password !== form.confirmPassword) {
       setError("Les mots de passe ne correspondent pas.");
       return;
     }
     if (form.password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caracteres.");
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
-
     setLoading(true);
     try {
       const res = await fetch("http://localhost:8000/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          nom:      form.nom,
-          prenom:   form.prenom,
-          email:    form.email,
-          password: form.password,
+          nom: form.nom, prenom: form.prenom,
+          email: form.email, password: form.password,
         }),
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || "Erreur lors de l'inscription.");
       }
-
       setSuccess(true);
       setTimeout(() => navigate("/login"), 2000);
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -56,7 +49,7 @@ export default function Register() {
     }
   };
 
-  // Inscription / Connexion via Google — GoogleLogin retourne un id_token
+  // ── Inscription Google ────────────────────────────────────────────────────
   const handleGoogleSuccess = async (credentialResponse) => {
     setError("");
     try {
@@ -65,22 +58,17 @@ export default function Register() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ credential: credentialResponse.credential }),
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || "Erreur inscription Google");
       }
-
       const { access_token } = await res.json();
-
       const meRes = await fetch("http://localhost:8000/auth/me", {
         headers: { Authorization: `Bearer ${access_token}` },
       });
       const userData = await meRes.json();
-
       login(userData, access_token);
       navigate("/candidat/offres");
-
     } catch (err) {
       setError(err.message || "Erreur lors de l'inscription avec Google.");
     }
@@ -89,14 +77,13 @@ export default function Register() {
   return (
     <div className="min-h-screen flex">
 
-      {/* PANNEAU GAUCHE */}
+      {/* ── PANNEAU GAUCHE ─────────────────────────────────────────────── */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroBg})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-gray-900/70 to-lime-900/50" />
-
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 bg-lime-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -110,16 +97,16 @@ export default function Register() {
           <div>
             <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
               Rejoignez la plateforme de recrutement{" "}
-              <span className="text-lime-400">nouvelle generation</span>
+              <span className="text-lime-400">nouvelle génération</span>
             </h2>
             <p className="text-gray-300 text-sm leading-relaxed mb-8">
-              Creez votre profil candidat, deposez votre CV et laissez l'IA faire le matching pour vous.
+              Créez votre profil candidat, déposez votre CV et laissez l'IA faire le matching pour vous.
             </p>
             <div className="flex flex-col gap-3">
               {[
-                { icon: "👤", label: "Profil candidat personnalise" },
+                { icon: "👤", label: "Profil candidat personnalisé" },
                 { icon: "📄", label: "Analyse automatique de votre CV" },
-                { icon: "🧠", label: "Test de personnalite Big Five OCEAN" },
+                { icon: "🧠", label: "Test de personnalité Big Five OCEAN" },
                 { icon: "✅", label: "Matching intelligent poste / profil" },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
@@ -131,12 +118,12 @@ export default function Register() {
           </div>
 
           <p className="text-gray-500 text-xs">
-            Master Intelligence Artificielle - Universite de Dschang 2026
+            Master Intelligence Artificielle · Université de Dschang © 2026
           </p>
         </div>
       </div>
 
-      {/* PANNEAU DROIT */}
+      {/* ── PANNEAU DROIT ──────────────────────────────────────────────── */}
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-6 py-12">
         <div className="w-full max-w-md">
 
@@ -152,58 +139,36 @@ export default function Register() {
 
           <div className="mb-6">
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">
-              Creer un compte
+              Créer un compte
             </h1>
             <p className="text-gray-500 text-sm">
-              Inscription gratuite - acces immediat a toutes les offres
+              Inscription gratuite — accès immédiat à toutes les offres
             </p>
           </div>
 
-          {/* Succes */}
+          {/* Succès */}
           {success && (
             <div className="mb-5 flex items-center gap-3 bg-lime-50 border border-lime-200 text-lime-700 rounded-xl px-4 py-3 text-sm">
-              <span>OK</span>
-              <span>Compte cree avec succes ! Redirection vers la connexion...</span>
+              <span>✅</span>
+              <span>Compte créé ! Redirection vers la connexion…</span>
             </div>
           )}
 
           {/* Erreur */}
           {error && (
             <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-              <span>!</span>
+              <span>⚠️</span>
               <span>{error}</span>
             </div>
           )}
 
-          {/* Bouton Google officiel */}
-          <div className="flex justify-center mb-5">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError("L'inscription Google a echoue. Reessaie.")}
-              text="signup_with"
-              shape="rectangular"
-              logo_alignment="left"
-              width="400"
-            />
-          </div>
-
-          {/* Separateur */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400 font-medium">ou avec email</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
           {/* Formulaire classique */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-semibold text-gray-700">Prenom</label>
+                <label className="text-sm font-semibold text-gray-700">Prénom</label>
                 <input
-                  type="text"
-                  placeholder="Jean"
-                  value={form.prenom}
+                  type="text" placeholder="Jean" value={form.prenom}
                   onChange={(e) => setForm({ ...form, prenom: e.target.value })}
                   required
                   className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
@@ -212,9 +177,7 @@ export default function Register() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-semibold text-gray-700">Nom</label>
                 <input
-                  type="text"
-                  placeholder="Kamga"
-                  value={form.nom}
+                  type="text" placeholder="Kamga" value={form.nom}
                   onChange={(e) => setForm({ ...form, nom: e.target.value })}
                   required
                   className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
@@ -225,9 +188,7 @@ export default function Register() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Adresse e-mail</label>
               <input
-                type="email"
-                placeholder="vous@exemple.com"
-                value={form.email}
+                type="email" placeholder="vous@exemple.com" value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 required
                 className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
@@ -237,9 +198,7 @@ export default function Register() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Mot de passe</label>
               <input
-                type="password"
-                placeholder="Minimum 6 caracteres"
-                value={form.password}
+                type="password" placeholder="Minimum 6 caractères" value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 required
                 className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
@@ -249,9 +208,7 @@ export default function Register() {
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-semibold text-gray-700">Confirmer le mot de passe</label>
               <input
-                type="password"
-                placeholder="Repetez le mot de passe"
-                value={form.confirmPassword}
+                type="password" placeholder="Répétez le mot de passe" value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                 required
                 className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
@@ -261,7 +218,7 @@ export default function Register() {
             <div className="flex items-center gap-3 bg-lime-50 border border-lime-100 rounded-xl px-4 py-3">
               <span className="text-lg">👤</span>
               <p className="text-xs text-lime-700 font-medium">
-                Vous serez inscrit en tant que <strong>candidat</strong>. Les comptes recruteurs sont crees par l'administrateur.
+                Vous serez inscrit en tant que <strong>candidat</strong>. Les comptes recruteurs sont créés par l'administrateur.
               </p>
             </div>
 
@@ -276,16 +233,34 @@ export default function Register() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                   </svg>
-                  Creation du compte...
+                  Création du compte…
                 </>
-              ) : (
-                "Creer mon compte gratuitement"
-              )}
+              ) : "Créer mon compte gratuitement"}
             </button>
           </form>
 
+          {/* Séparateur */}
+          <div className="flex items-center gap-3 my-5">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium">ou s'inscrire avec</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Bouton Google centré en bas */}
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError("L'inscription Google a échoué. Réessaie.")}
+              text="signup_with"
+              shape="rectangular"
+              size="large"
+              width="400"
+              locale="fr"
+            />
+          </div>
+
           <p className="text-center text-sm text-gray-500 mt-6">
-            Deja un compte ?{" "}
+            Déjà un compte ?{" "}
             <Link to="/login" className="text-lime-600 font-bold hover:text-lime-500 transition-colors duration-200">
               Se connecter
             </Link>
@@ -293,7 +268,7 @@ export default function Register() {
 
           <div className="mt-4 text-center">
             <Link to="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">
-              Retour a l'accueil
+              ← Retour à l'accueil
             </Link>
           </div>
 
