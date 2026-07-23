@@ -39,5 +39,13 @@ class Settings(BaseSettings):
     # (ex : "Voir mon offre" → FRONTEND_URL + "/offres/12")
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # ─── Connexion via Google ──────────────────────────────────────────────────
+    # Le "Client ID" de ton projet Google Cloud (console.cloud.google.com →
+    # APIs & Services → Identifiants → ID client OAuth 2.0). C'est le MÊME
+    # Client ID que celui utilisé côté frontend pour afficher le bouton Google —
+    # il n'est pas secret, mais il doit correspondre exactement, sinon la
+    # vérification du jeton échouera.
+    GOOGLE_CLIENT_ID: str = ""
+
 
 settings = Settings()

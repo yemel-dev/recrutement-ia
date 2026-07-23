@@ -23,12 +23,45 @@ class UserCreateAdmin(UserBase):
 
 # ─── Réponse API (jamais le mot de passe) ─────────────────────────────────────
 class UserResponse(UserBase):
-    id:         int
-    role:       UserRole
-    is_active:  bool
-    created_at: datetime
+    id:            int
+    role:          UserRole
+    is_active:     bool
+    created_at:    datetime
+
+    # Profil enrichi — toujours optionnels, None tant que non renseignés
+    photo_url:     str | None = None
+    telephone:     str | None = None
+    localisation:  str | None = None
+    bio:           str | None = None
+    linkedin_url:  str | None = None
+    github_url:    str | None = None
+    portfolio_url: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+# ─── Édition de profil (PATCH /auth/me) ───────────────────────────────────────
+class UserProfileUpdate(BaseModel):
+    """
+    Tous les champs sont optionnels : seuls ceux envoyés sont modifiés.
+    Ne permet PAS de changer l'email ou le rôle — ce sont des opérations
+    sensibles volontairement exclues de cet endpoint.
+    """
+    nom:           str | None = None
+    prenom:        str | None = None
+    telephone:     str | None = None
+    localisation:  str | None = None
+    bio:           str | None = None
+    linkedin_url:  str | None = None
+    github_url:    str | None = None
+    portfolio_url: str | None = None
+
+
+# ─── Connexion via Google ──────────────────────────────────────────────────────
+class GoogleLoginRequest(BaseModel):
+    # Le jeton d'identité ("ID token") renvoyé par Google côté frontend
+    # après une connexion réussie avec le bouton "Continuer avec Google".
+    credential: str
 
 
 # ─── Token JWT ────────────────────────────────────────────────────────────────

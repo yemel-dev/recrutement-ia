@@ -1,6 +1,8 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from app.database import Base, engine, get_db
 from app.models import User, JobOffer, Application, PersonalityTest, Ranking
 from app.models.user import UserRole
@@ -27,6 +29,12 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["Content-Type", "Cache-Control", "X-Accel-Buffering"],
 )
+
+# Photos de profil : contenu PUBLIC (pas d'auth requise pour l'affichage,
+# contrairement aux CV qui passent par un endpoint protégé). Le dossier est
+# créé automatiquement si absent, pour éviter une erreur au premier démarrage.
+os.makedirs("uploads/profile_photos", exist_ok=True)
+app.mount("/static/photos", StaticFiles(directory="uploads/profile_photos"), name="photos")
 
 app.include_router(auth_router)
 app.include_router(personality_router)

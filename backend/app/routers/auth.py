@@ -12,21 +12,34 @@ Endpoints admin (token admin requis) :
     PATCH  /admin/users/{id}     → activer/désactiver un utilisateur
     DELETE /admin/users/{id}     → supprimer un utilisateur
 """
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+import os
+import uuid
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.user_schema import UserCreate, UserCreateAdmin, UserResponse, Token
+from app.schemas.user_schema import (
+    UserCreate, UserCreateAdmin, UserResponse, Token,
+    UserProfileUpdate, GoogleLoginRequest,
+)
 from app.services.auth_service import (
     authentifier_utilisateur,
     creer_token_acces,
     creer_utilisateur,
     obtenir_utilisateur_par_email,
     decoder_token,
+    verifier_jeton_google,
+    obtenir_ou_creer_utilisateur_google,
+    GoogleTokenInvalide,
 )
 from app.services import email_service
 from app.models.user import User, UserRole
+
+PHOTOS_DIR = "uploads/profile_photos"
+EXTENSIONS_PHOTO_AUTORISEES = {".jpg", ".jpeg", ".png", ".webp"}
+TAILLE_MAX_PHOTO = 5 * 1024 * 1024  # 5 Mo
+os.makedirs(PHOTOS_DIR, exist_ok=True)
 
 router = APIRouter(tags=["Authentification"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -121,6 +134,17 @@ def login(
     db: Session = Depends(get_db)
 ):
     """Connexion — retourne un token JWT."""
+    utilisateur_existant = obtenir_utilisateur_par_email(db, form_data.username)
+    if utilisateur_existant and utilisateur_existant.hashed_password is None:
+        # Compte créé via Google : pas de mot de passe local à vérifier.
+        # On le dit clairement plutôt que de renvoyer un "email/mdp incorrect"
+        # trompeur — l'utilisateur ne s'est jamais trompé, il utilise juste
+        # le mauvais mode de connexion.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ce compte utilise la connexion Google. Clique sur \"Continuer avec Google\".",
+        )
+
     user = authentifier_utilisateur(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -142,9 +166,106 @@ def login(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+@router.post("/auth/google", response_model=Token, tags=["Authentification"])
+def login_google(
+    payload: GoogleLoginRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Connexion/inscription via Google — reçoit le jeton d'identité que le
+    frontend obtient après une connexion réussie avec le bouton Google.
+
+    - Si l'email existe déjà (compte classique) → on le lie au compte Google
+      et on connecte normalement, avec le même JWT que d'habitude.
+    - Sinon → création automatique d'un compte candidat (jamais recruteur/admin).
+    """
+    try:
+        google_payload = verifier_jeton_google(payload.credential)
+    except GoogleTokenInvalide:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Jeton Google invalide ou expiré",
+        )
+
+    user, est_nouveau = obtenir_ou_creer_utilisateur_google(db, google_payload)
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ce compte a été désactivé",
+        )
+
+    if est_nouveau:
+        background_tasks.add_task(email_service.envoyer_bienvenue, user.email, user.prenom)
+
+    access_token = creer_token_acces(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
 @router.get("/auth/me", response_model=UserResponse, tags=["Authentification"])
 def get_me(current_user: User = Depends(get_current_user)):
     """Retourne le profil de l'utilisateur connecté."""
+    return current_user
+
+
+@router.patch("/auth/me", response_model=UserResponse, tags=["Authentification"])
+def modifier_mon_profil(
+    profil_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Édite le profil de l'utilisateur connecté (nom, prénom, bio, téléphone,
+    localisation, liens LinkedIn/GitHub/portfolio). Ne modifie jamais l'email
+    ni le rôle — volontairement exclus, ce sont des opérations sensibles qui
+    ne passent pas par cet endpoint.
+    """
+    champs_a_modifier = profil_data.model_dump(exclude_unset=True)
+    for champ, valeur in champs_a_modifier.items():
+        setattr(current_user, champ, valeur)
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.post("/auth/me/photo", response_model=UserResponse, tags=["Authentification"])
+def uploader_photo_profil(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload/remplace la photo de profil de l'utilisateur connecté.
+    Stockée dans un dossier PUBLIC (contrairement au CV) car affichée
+    directement dans l'UI sans authentification (balises <img>).
+    """
+    extension = os.path.splitext(file.filename)[1].lower()
+    if extension not in EXTENSIONS_PHOTO_AUTORISEES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Format non supporté. Formats acceptés : JPG, PNG, WEBP.",
+        )
+
+    contenu = file.file.read()
+    if len(contenu) > TAILLE_MAX_PHOTO:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Fichier trop volumineux (5 Mo maximum).",
+        )
+
+    # Nom de fichier unique — évite d'écraser la photo d'un autre utilisateur
+    # et évite le cache navigateur qui garderait l'ancienne image affichée
+    # sous la même URL après un remplacement.
+    nom_fichier = f"user_{current_user.id}_{uuid.uuid4().hex[:8]}{extension}"
+    chemin_fichier = os.path.join(PHOTOS_DIR, nom_fichier)
+    with open(chemin_fichier, "wb") as f:
+        f.write(contenu)
+
+    current_user.photo_url = f"/static/photos/{nom_fichier}"
+    db.commit()
+    db.refresh(current_user)
     return current_user
 
 
