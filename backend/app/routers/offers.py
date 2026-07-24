@@ -287,10 +287,12 @@ def obtenir_classement(
     for ranking in rankings:
         candidat = ranking.application.candidat
         resultat.append(RankingResponse(
+            application_id=ranking.application_id,
             position=ranking.position,
             candidat_nom=candidat.nom,
             candidat_prenom=candidat.prenom,
             candidat_email=candidat.email,
+            statut=ranking.application.statut.value,
             score_global=ranking.score_global,
             score_competences=ranking.score_competences,
             score_experience=ranking.score_experience,

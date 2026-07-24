@@ -7,9 +7,22 @@ Modifications v2 (SSE) :
   - GET  /applications/{id}/progress → SSE : diffuse la progression
                           de l'analyse en temps réel
   - Stockage en mémoire des queues de progression par application_id
+
+CORRECTIONS v3 :
+  - Le loop asyncio principal est capturé une seule fois au démarrage de
+    l'app (main.py → set_main_loop), plutôt que dans postuler() lui-même
+    (qui tourne dans le threadpool, pas dans le thread du loop principal).
+  - GET /{id}/progress détecte la fin du NLP via `competences_extraites`
+    (rempli dès la fin du pipeline) plutôt que via `statut` (qui ne passe
+    à `analyse` qu'après le test Big Five en plus) — évite la course où
+    l'événement "done" est diffusé avant que le SSE ne soit connecté.
+  - emit() encapsulé dans un try/except : une erreur SSE n'interrompt plus
+    l'analyse NLP
+  - Logs détaillés à chaque étape pour diagnostiquer les échecs futurs
 """
 import asyncio
 import json
+import logging
 import os
 import shutil
 from typing import Dict, List, AsyncGenerator
@@ -23,11 +36,13 @@ from app.database import get_db, SessionLocal
 from app.models.user import User, UserRole
 from app.models.job_offer import JobOffer
 from app.models.application import Application, ApplicationStatus
-from app.schemas.schemas import ApplicationResponse
+from app.schemas.schemas import ApplicationResponse, CandidatureDecisionRequest
 from app.services.nlp.nlp_pipeline import analyser_cv
 from app.services.ranking_service import tenter_calculer_score
 from app.services import email_service
 from app.routers.auth import get_current_user, require_roles
+
+logger = logging.getLogger("recrutement_ia.applications")
 
 router = APIRouter(prefix="/applications", tags=["Candidatures"])
 
@@ -46,6 +61,26 @@ def _verifier_lecture_candidature(candidature: Application, current_user: User) 
     est_admin        = current_user.role == UserRole.admin
     if not (est_le_candidat or est_le_recruteur or est_admin):
         raise HTTPException(status_code=403, detail="Accès refusé")
+
+
+# ── Loop asyncio principal (capturé une seule fois, au démarrage de l'app) ───
+#
+# postuler() est une fonction `def` (synchrone) : FastAPI l'exécute dans un
+# thread du threadpool, PAS dans le thread du event loop principal. Appeler
+# asyncio.get_event_loop() depuis l'intérieur de postuler() ne peut donc pas
+# récupérer le bon loop (c'était le bug à l'origine des "SSE désactivé").
+#
+# À la place, on capture le loop une seule fois au démarrage de l'app (voir
+# main.py → set_main_loop, appelé depuis un handler @app.on_event("startup")
+# qui, lui, tourne bien dans le thread du event loop principal), et on le
+# réutilise ensuite pour chaque candidature.
+_main_loop: "asyncio.AbstractEventLoop | None" = None
+
+
+def set_main_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """Appelé une fois au démarrage de l'app (voir main.py)."""
+    global _main_loop
+    _main_loop = loop
 
 
 # ── Stockage en mémoire des queues SSE ───────────────────────────────────────
@@ -74,31 +109,71 @@ async def _broadcast(application_id: int, data: dict):
 
 # ── Tâche de fond : analyse NLP avec progression SSE ─────────────────────────
 
-def _run_analyse_background(application_id: int, chemin_fichier: str, competences_offre: list):
-    import asyncio as _asyncio
-    try:
-        loop = _asyncio.get_event_loop()
-    except RuntimeError:
-        loop = _asyncio.new_event_loop()
-        _asyncio.set_event_loop(loop)
+def _run_analyse_background(
+    application_id: int,
+    chemin_fichier: str,
+    competences_offre: list,
+    main_loop: asyncio.AbstractEventLoop,   # ← loop du thread principal FastAPI,
+                                            #   capturé AVANT le lancement du thread
+):
+    """
+    Tâche exécutée dans un thread séparé par FastAPI BackgroundTasks.
+
+    Pour envoyer des événements SSE depuis ce thread vers les clients
+    connectés (qui vivent dans le loop asyncio principal), on utilise
+    run_coroutine_threadsafe() avec le loop du thread principal.
+
+    Ce loop est capturé une seule fois au démarrage de l'app (voir
+    set_main_loop / main.py) et transmis ici en paramètre — c'est la seule
+    façon fiable de l'obtenir : asyncio.get_event_loop() appelé depuis un
+    thread secondaire renvoie un loop différent (ou lève une erreur).
+    """
 
     def emit(etape: int, label: str, progression: int):
+        """Envoie une progression SSE. Non bloquant et tolérant aux erreurs."""
         payload = {"etape": etape, "label": label, "progression": progression}
-        asyncio.run_coroutine_threadsafe(_broadcast(application_id, payload), loop)
+        try:
+            if main_loop and main_loop.is_running():
+                asyncio.run_coroutine_threadsafe(_broadcast(application_id, payload), main_loop)
+        except Exception:
+            logger.warning(
+                "[NLP] SSE broadcast échoué (candidature #%s, étape %s) — analyse continue",
+                application_id, etape,
+            )
+
+    logger.info(
+        "[NLP] Démarrage analyse — candidature #%s, fichier: %s",
+        application_id, chemin_fichier,
+    )
 
     db = SessionLocal()
     try:
         application = db.query(Application).filter(Application.id == application_id).first()
         if not application:
+            logger.error("[NLP] Candidature #%s introuvable en base — abandon", application_id)
             return
 
-        offre = application.offre
         competences_list = competences_offre
+        logger.info(
+            "[NLP] Candidature #%s — %d compétences requises : %s",
+            application_id, len(competences_list), competences_list,
+        )
 
         resultat_nlp = analyser_cv(
             chemin_fichier,
             competences_offre=competences_list,
             on_progress=emit,
+        )
+
+        logger.info(
+            "[NLP] Analyse réussie — candidature #%s | "
+            "expérience: %s ans | formation: %s | "
+            "compétences extraites: %d | score_compétences: %.2f",
+            application_id,
+            resultat_nlp["experience_annees"],
+            resultat_nlp["formation_niveau"],
+            len(resultat_nlp["competences_extraites"]),
+            resultat_nlp["score_competences"],
         )
 
         application.competences_extraites = json.dumps(resultat_nlp["competences_extraites"])
@@ -108,8 +183,17 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
         db.commit()
         db.refresh(application)
 
-        tenter_calculer_score(db, application)
+        score_calcule = tenter_calculer_score(db, application)
         db.refresh(application)
+
+        logger.info(
+            "[NLP] Score — candidature #%s | score_global: %s | statut: %s | "
+            "big_five_disponible: %s",
+            application_id,
+            application.score_global,
+            application.statut.value,
+            score_calcule,
+        )
 
         payload_final = {
             "etape": 5,
@@ -119,9 +203,45 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
             "score_global": application.score_global,
             "statut": application.statut.value,
         }
-        asyncio.run_coroutine_threadsafe(_broadcast(application_id, payload_final), loop)
+        try:
+            if main_loop and main_loop.is_running():
+                asyncio.run_coroutine_threadsafe(
+                    _broadcast(application_id, payload_final), main_loop
+                )
+        except Exception:
+            logger.warning("[NLP] SSE payload final échoué pour candidature #%s", application_id)
 
     except Exception as e:
+        logger.exception(
+            "[NLP] ❌ ÉCHEC analyse NLP — candidature #%s (fichier: %s) — erreur: %s",
+            application_id, chemin_fichier, str(e),
+        )
+
+        # Repli neutre : sauvegarde des valeurs par défaut pour que la
+        # candidature ne reste pas bloquée avec tous les champs à null
+        try:
+            application = db.query(Application).filter(Application.id == application_id).first()
+            if application:
+                if application.competences_extraites is None:
+                    application.competences_extraites = json.dumps([])
+                if application.formation_niveau is None:
+                    application.formation_niveau = "inconnu"
+                if application.entites_nommees is None:
+                    application.entites_nommees = json.dumps({})
+                db.commit()
+                db.refresh(application)
+                tenter_calculer_score(db, application)
+                db.refresh(application)
+                logger.info(
+                    "[NLP] Repli neutre appliqué — candidature #%s | statut: %s",
+                    application_id, application.statut.value,
+                )
+        except Exception:
+            logger.exception(
+                "[NLP] ❌ Échec également du repli neutre — candidature #%s",
+                application_id,
+            )
+
         error_payload = {
             "etape": -1,
             "label": f"Erreur : {str(e)}",
@@ -129,7 +249,13 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
             "done": True,
             "error": True,
         }
-        asyncio.run_coroutine_threadsafe(_broadcast(application_id, error_payload), loop)
+        try:
+            if main_loop and main_loop.is_running():
+                asyncio.run_coroutine_threadsafe(
+                    _broadcast(application_id, error_payload), main_loop
+                )
+        except Exception:
+            pass
     finally:
         db.close()
 
@@ -170,6 +296,11 @@ def postuler(
     with open(chemin_fichier, "wb") as destination:
         shutil.copyfileobj(file.file, destination)
 
+    logger.info(
+        "[UPLOAD] CV sauvegardé — utilisateur #%s, offre #%s, fichier: %s",
+        current_user.id, offre_id, chemin_fichier,
+    )
+
     nouvelle_candidature = Application(
         candidat_id=current_user.id,
         offre_id=offre_id,
@@ -181,12 +312,19 @@ def postuler(
     db.commit()
     db.refresh(nouvelle_candidature)
 
+    # On réutilise le loop principal capturé au démarrage de l'app (voir
+    # set_main_loop / main.py) — impossible à récupérer correctement ici,
+    # puisque postuler() tourne dans un thread du threadpool.
+    if _main_loop is None:
+        logger.warning("[SSE] Loop asyncio principal non initialisé — SSE désactivé")
+
     competences_offre = json.loads(offre.competences_requises)
     background_tasks.add_task(
         _run_analyse_background,
         nouvelle_candidature.id,
         chemin_fichier,
         competences_offre,
+        _main_loop,
     )
 
     background_tasks.add_task(
@@ -217,7 +355,15 @@ async def progression_analyse(
 
     _verifier_lecture_candidature(candidature, current_user)
 
-    if candidature.statut != ApplicationStatus.en_attente:
+    # CORRECTIF : `statut` ne passe à `analyse` qu'une fois le NLP ET le
+    # Big Five terminés (voir tenter_calculer_score / ranking_service.py).
+    # Si on teste `statut != en_attente` ici, on rate le cas très fréquent
+    # où le NLP est déjà fini mais le Big Five pas encore passé : le
+    # `statut` reste `en_attente`, alors que l'événement "done" du NLP a
+    # déjà été diffusé (et perdu, car personne n'écoutait encore).
+    # `competences_extraites` est le bon indicateur : rempli dès la fin du
+    # NLP, indépendamment du Big Five.
+    if candidature.competences_extraites is not None:
         async def already_done():
             data = {
                 "etape": 5, "label": "Analyse terminée",
@@ -277,7 +423,24 @@ def obtenir_candidature(
     if candidature is None:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
     _verifier_lecture_candidature(candidature, current_user)
-    return candidature
+
+    # On enrichit manuellement avec l'identité du candidat : ApplicationResponse
+    # est mappé via from_attributes sur l'objet Application, qui n'a pas ces
+    # champs directement (ils vivent sur la relation .candidat).
+    data = ApplicationResponse.model_validate(candidature).model_dump()
+    candidat = candidature.candidat
+    data.update({
+        "candidat_nom":           candidat.nom,
+        "candidat_prenom":        candidat.prenom,
+        "candidat_email":         candidat.email,
+        "candidat_photo_url":     candidat.photo_url,
+        "candidat_telephone":     candidat.telephone,
+        "candidat_localisation":  candidat.localisation,
+        "candidat_linkedin_url":  candidat.linkedin_url,
+        "candidat_github_url":    candidat.github_url,
+        "candidat_portfolio_url": candidat.portfolio_url,
+    })
+    return data
 
 
 # ─── GET /applications/{id}/cv ────────────────────────────────────────────────
@@ -300,7 +463,45 @@ def telecharger_cv(
         media_type="application/octet-stream",
     )
 
+# ─── PATCH /applications/{id}/decision ────────────────────────────────────────
 
+@router.patch("/{application_id}/decision", response_model=ApplicationResponse, tags=["Candidatures"])
+def decider_candidature(
+    application_id: int,
+    decision: CandidatureDecisionRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Le recruteur accepte ou rejette une candidature reçue sur l'une de ses
+    offres. Envoie automatiquement un email de notification au candidat.
+    """
+    candidature = db.query(Application).filter(Application.id == application_id).first()
+    if candidature is None:
+        raise HTTPException(status_code=404, detail="Candidature introuvable")
+
+    est_le_recruteur = candidature.offre.recruteur_id == current_user.id
+    est_admin = current_user.role == UserRole.admin
+    if not (est_le_recruteur or est_admin):
+        raise HTTPException(status_code=403, detail="Seul le recruteur propriétaire de l'offre peut décider")
+
+    candidature.statut = ApplicationStatus(decision.statut)
+    db.commit()
+    db.refresh(candidature)
+
+    if decision.statut == "accepte":
+        background_tasks.add_task(
+            email_service.envoyer_candidature_acceptee,
+            candidature.candidat.email, candidature.candidat.prenom, candidature.offre.titre,
+        )
+    else:
+        background_tasks.add_task(
+            email_service.envoyer_candidature_rejetee,
+            candidature.candidat.email, candidature.candidat.prenom, candidature.offre.titre,
+        )
+
+    return candidature
 # ─── PATCH /applications/{id}/moderation ──────────────────────────────────────
 
 @router.patch("/{application_id}/moderation", response_model=ApplicationResponse, tags=["Administration"])

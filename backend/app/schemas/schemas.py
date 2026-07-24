@@ -1,10 +1,11 @@
 from pydantic import BaseModel, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 from app.models.application import ApplicationStatus
 import json
 
-
+class CandidatureDecisionRequest(BaseModel):
+    statut: Literal["accepte", "rejete"]
 # ─── Réponse candidature ──────────────────────────────────────────────────────
 
 class ApplicationResponse(BaseModel):
@@ -27,6 +28,20 @@ class ApplicationResponse(BaseModel):
     score_global: Optional[float] = None
 
     created_at: datetime
+
+    # Identité du candidat — utilisées par la fiche candidat côté recruteur.
+    # Optionnelles : absentes/None sur les endpoints qui renvoient l'objet
+    # Application brut (ex: GET /applications/me), remplies manuellement
+    # par GET /applications/{id} (voir routers/applications.py).
+    candidat_nom:           Optional[str] = None
+    candidat_prenom:        Optional[str] = None
+    candidat_email:         Optional[str] = None
+    candidat_photo_url:     Optional[str] = None
+    candidat_telephone:     Optional[str] = None
+    candidat_localisation:  Optional[str] = None
+    candidat_linkedin_url:  Optional[str] = None
+    candidat_github_url:    Optional[str] = None
+    candidat_portfolio_url: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -79,10 +94,12 @@ class PersonalityTestResponse(BaseModel):
 # ─── Schéma pour le classement ────────────────────────────────────────────────
 
 class RankingResponse(BaseModel):
+    application_id: int
     position: int
     candidat_nom: str
     candidat_prenom: str
     candidat_email: str
+    statut: str
     score_global: float
     score_competences: float
     score_experience: float

@@ -143,7 +143,14 @@ def envoyer_compte_cree_admin(destinataire: str, prenom: str, role: str, mot_de_
     )
     _envoyer(destinataire, "Votre compte Recrutement IA a été créé", html)
 
-
+def envoyer_candidature_acceptee(destinataire: str, prenom: str, offre_titre: str) -> None:
+    """Envoyé quand un recruteur accepte la candidature d'un candidat."""
+    html = _rendre_template(
+        "candidature_acceptee.html",
+        prenom=prenom, offre_titre=offre_titre,
+    )
+    _envoyer(destinataire, f"Candidature retenue — {offre_titre}", html)
+    
 def envoyer_candidature_rejetee(destinataire: str, prenom: str, offre_titre: str) -> None:
     """Envoyé quand un admin rejette une candidature en modération."""
     html = _rendre_template(

@@ -1,3 +1,4 @@
+from typing import Optional
 """
 Router Auth — Authentification + gestion admin des utilisateurs
 
@@ -14,7 +15,7 @@ Endpoints admin (token admin requis) :
 """
 import os
 import uuid
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile, File, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -42,15 +43,19 @@ TAILLE_MAX_PHOTO = 5 * 1024 * 1024  # 5 Mo
 os.makedirs(PHOTOS_DIR, exist_ok=True)
 
 router = APIRouter(tags=["Authentification"])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 # ─── Dépendance : utilisateur connecté ───────────────────────────────────────
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db:    Session = Depends(get_db)
+    db:    Session = Depends(get_db),
+    token_header: Optional[str] = Depends(oauth2_scheme),
+    token_query:  Optional[str] = Query(default=None),
 ) -> User:
+    # SSE (EventSource) ne peut pas envoyer de header Authorization —
+    # on accepte donc le token en query param ?token=... comme fallback.
+    token = token_query or token_header
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token invalide ou expiré",

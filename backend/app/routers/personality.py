@@ -35,7 +35,27 @@ def get_questions(current_user: User = Depends(get_current_user)):
     """
     return {"questions": obtenir_questions()}
 
+# ─── GET /personality-tests/me ────────────────────────────────────────────────
 
+@router.get("/me", response_model=PersonalityTestResponse)
+def obtenir_mon_test(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retourne le test Big Five déjà passé par le candidat connecté, s'il existe.
+    Le test n'étant passé qu'une seule fois (et réutilisé pour toutes ses
+    candidatures), le frontend appelle cet endpoint pour savoir s'il doit
+    afficher le questionnaire ou directement le résultat existant.
+    """
+    test = (
+        db.query(PersonalityTest)
+        .filter(PersonalityTest.candidat_id == current_user.id)
+        .first()
+    )
+    if test is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aucun test passé pour le moment")
+    return test
 # ─── POST /personality-tests ──────────────────────────────────────────────────
 
 @router.post("", response_model=PersonalityTestResponse, status_code=status.HTTP_201_CREATED)

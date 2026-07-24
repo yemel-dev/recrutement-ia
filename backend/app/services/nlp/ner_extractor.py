@@ -181,6 +181,27 @@ def _extraire_annees_experience(texte: str, dates_spacy: list[str]) -> float:
             if 0 < annees <= 50:
                 return annees
 
+    # ── Passe 1.5 : plages de dates explicites dans le texte lui-même ──
+    # Beaucoup de CV n'écrivent jamais "X ans d'expérience" : ils listent un
+    # historique de postes avec des dates ("2019 - 2022", "2020 à 2023",
+    # "Depuis 2021"). On les détecte directement dans le texte brut, sans
+    # dépendre uniquement de la qualité du NER spaCy sur ce type de mise en
+    # forme (peu fiable sur des CV en liste à puces).
+    annee_courante = 2026
+    plages = re.findall(r"\b(19[7-9]\d|20[0-2]\d)\s*(?:-|–|—|à|to)\s*(19[7-9]\d|20[0-2]\d)\b", texte_lower)
+    depuis = re.findall(r"depuis\s+(19[7-9]\d|20[0-2]\d)", texte_lower)
+
+    annees_trouvees_texte = set()
+    for debut, fin in plages:
+        annees_trouvees_texte.update({int(debut), int(fin)})
+    for annee in depuis:
+        annees_trouvees_texte.update({int(annee), annee_courante})
+
+    if annees_trouvees_texte:
+        experience = max(annees_trouvees_texte) - min(annees_trouvees_texte)
+        if experience > 0:
+            return float(experience)
+
     # ── Passe 2 : compter les années distinctes dans les dates spaCy ──
     annees_trouvees = set()
 

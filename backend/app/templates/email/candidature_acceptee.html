@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titre %}Votre candidature a été retenue{% endblock %}
+{% block contenu %}
+<h2 style="color:#111827; margin-top:0;">Bonne nouvelle, {{ prenom }} !</h2>
+<p style="color:#374151; font-size:14px; line-height:1.6;">
+  Votre candidature pour l'offre <strong>« {{ offre_titre }} »</strong> a été retenue par le recruteur.
+</p>
+<p style="text-align:center; margin:24px 0;">
+  <span style="display:inline-block; background-color:#ecfdf5; color:#059669; font-size:16px; font-weight:bold; padding:12px 28px; border-radius:8px;">
+    ✓ Candidature acceptée
+  </span>
+</p>
+<p style="color:#6b7280; font-size:13px;">
+  Le recruteur reviendra vers vous prochainement pour la suite du processus.
+  Toutes nos félicitations !
+</p>
+<p style="text-align:center; margin:28px 0;">
+  <a href="{{ frontend_url }}/mes-candidatures"
+     style="background-color:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:6px; font-size:14px; font-weight:bold;">
+    Voir ma candidature
+  </a>
+</p>
+{% endblock %}

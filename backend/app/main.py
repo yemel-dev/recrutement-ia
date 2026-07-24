@@ -1,15 +1,22 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 import os
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
 from app.database import Base, engine, get_db
 from app.models import User, JobOffer, Application, PersonalityTest, Ranking
 from app.models.user import UserRole
 from app.routers.auth import router as auth_router
 from app.routers.personality import router as personality_router
 from app.routers.offers import router as offers_router
-from app.routers.applications import router as applications_router
+from app.routers.applications import router as applications_router, set_main_loop
 from app.services.auth_service import creer_utilisateur, obtenir_utilisateur_par_email
 from app.config import settings
 
@@ -81,6 +88,19 @@ def init_admin_au_demarrage():
         creer_admin_par_defaut(db)
     finally:
         db.close()
+
+
+@app.on_event("startup")
+async def init_sse_loop_au_demarrage():
+    """
+    Capture le event loop principal pour le SSE des candidatures.
+
+    Ce handler est `async def` et tourne bien dans le thread du event loop
+    principal (contrairement à postuler(), qui est `def` et tourne dans le
+    threadpool) — get_running_loop() y retourne donc le bon loop, une fois
+    pour toutes, au démarrage de l'application.
+    """
+    set_main_loop(asyncio.get_running_loop())
 
 
 @app.get("/")
