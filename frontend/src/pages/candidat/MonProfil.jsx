@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
+import { CheckCircle2, AlertTriangle, MapPin } from "lucide-react";
 
 export default function MonProfil() {
   const { user, updateUser } = useAuth();
@@ -96,13 +97,13 @@ export default function MonProfil() {
       {/* Alertes */}
       {success && (
         <div className="mb-6 flex items-center gap-3 bg-lime-50 border border-lime-200 text-lime-700 rounded-xl px-4 py-3 text-sm">
-          <span>OK</span>
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
           <span>{success}</span>
         </div>
       )}
       {error && (
         <div className="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-          <span>!</span>
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
           <span>{error}</span>
         </div>
       )}
@@ -168,10 +169,7 @@ export default function MonProfil() {
             <p className="text-gray-500 text-sm mt-1">{user?.email}</p>
             {user?.localisation && (
               <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-                  <circle cx="12" cy="10" r="3"/>
-                </svg>
+                <MapPin className="w-3 h-3" strokeWidth={2} />
                 {user.localisation}
               </p>
             )}

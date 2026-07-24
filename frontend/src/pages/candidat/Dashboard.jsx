@@ -4,6 +4,7 @@ import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
 import EmptyState from "../../components/EmptyState";
 import ScoreBarChart from "../../components/ScoreBarChart";
+import { Sparkles, Briefcase, Users, Target, Hourglass, TrendingUp, TrendingDown, BarChart3, ArrowRight, Check } from "lucide-react";
 
 const STATUT_LABEL = {
   en_attente: "En cours",
@@ -30,7 +31,7 @@ function StatCard({ icon, value, label, sublabel, bg, border, trend }) {
     >
       {/* Icône */}
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
+        className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
         style={{ background: "#111" }}
       >
         {icon}
@@ -52,7 +53,7 @@ function StatCard({ icon, value, label, sublabel, bg, border, trend }) {
                 border: trend >= 0 ? "1px solid #86efac" : "1px solid #fca5a5",
               }}
             >
-              {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
+              {trend >= 0 ? <TrendingUp className="inline w-3 h-3 -mt-0.5" strokeWidth={2.5} /> : <TrendingDown className="inline w-3 h-3 -mt-0.5" strokeWidth={2.5} />} {Math.abs(trend)}%
             </span>
             <span className="text-xs text-gray-500">ce mois</span>
           </div>
@@ -150,8 +151,9 @@ export default function Dashboard() {
       {/* ── Bannière bienvenue ──────────────────────────────────────────── */}
       <div className="bg-white border border-gray-100 rounded-2xl p-6 flex items-center justify-between flex-wrap gap-4 shadow-sm">
         <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">
-            Bonjour{prenom ? `, ${prenom}` : ""} 👋
+          <h1 className="text-2xl font-extrabold text-gray-900 flex items-center gap-2">
+            Bonjour{prenom ? `, ${prenom}` : ""}
+            <Sparkles className="w-5 h-5 text-lime-500" strokeWidth={2} />
           </h1>
           <p className="text-sm text-gray-400 mt-1">
             Suis l'analyse de tes candidatures et découvre les offres qui te correspondent.
@@ -182,7 +184,7 @@ export default function Dashboard() {
         {/* Grille 2×2 cartes */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard
-  icon="💼"
+  icon={<Briefcase className="w-5 h-5 text-white" strokeWidth={2} />}
   value={offresActives.length}
   label="Offres disponibles"
   sublabel={`${offresActives.length} active${offresActives.length > 1 ? "s" : ""}`}
@@ -191,7 +193,7 @@ export default function Dashboard() {
   trend={15}
 />
 <StatCard
-  icon="👤"
+  icon={<Users className="w-5 h-5 text-white" strokeWidth={2} />}
   value={candidatures.length}
   label="Candidatures envoyées"
   sublabel="Total cumulé"
@@ -200,7 +202,7 @@ export default function Dashboard() {
   trend={4}
 />
 <StatCard
-  icon="🎯"
+  icon={<Target className="w-5 h-5 text-white" strokeWidth={2} />}
   value={candidaturesScorees.length}
   label="Analysées"
   sublabel={scoresMoyen ? `Moy. ${scoresMoyen}%` : "En attente"}
@@ -209,10 +211,10 @@ export default function Dashboard() {
   trend={10}
 />
 <StatCard
-  icon="⏳"
+  icon={<Hourglass className="w-5 h-5 text-white" strokeWidth={2} />}
   value={candidaturesEnCours.length}
   label="En cours d'analyse"
-  sublabel={candidaturesEnCours.length > 0 ? "Traitement en cours…" : "Tout est traité ✓"}
+  sublabel={candidaturesEnCours.length > 0 ? "Traitement en cours…" : "Tout est traité"}
   bg="#fbcfe8"
   border="#db2777"
 />
@@ -245,7 +247,7 @@ export default function Dashboard() {
 
           {dataGraphique.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="text-4xl mb-3">📊</div>
+              <BarChart3 className="w-9 h-9 text-gray-300 mb-3" strokeWidth={1.5} />
               <p className="text-sm font-semibold text-gray-400">Aucune analyse disponible</p>
               <p className="text-xs text-gray-300 mt-1">
                 Ton premier score apparaîtra ici après analyse de ta candidature.
@@ -287,8 +289,8 @@ export default function Dashboard() {
                   ? Math.round(c.score_global * 100) : null;
                 return (
                   <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-150">
-                    <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
-                      💼
+                    <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <Briefcase className="w-4 h-4 text-gray-500" strokeWidth={2} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 truncate">
@@ -296,8 +298,9 @@ export default function Dashboard() {
                       </p>
                       {c.statut === "en_attente" ? (
                         c.competences_extraites ? (
-                          <p className="text-xs text-blue-500 mt-0.5 font-medium">
-                            CV analysé ✓ — en attente du test Big Five
+                          <p className="text-xs text-blue-500 mt-0.5 font-medium flex items-center gap-1">
+                            <Check className="w-3 h-3" strokeWidth={2.5} />
+                            CV analysé — en attente du test Big Five
                           </p>
                         ) : (
                           <div className="mt-1.5">
@@ -333,9 +336,10 @@ export default function Dashboard() {
               })}
               <Link
                 to="/candidat/mes-candidatures"
-                className="block text-center text-xs font-semibold text-lime-600 hover:text-lime-700 pt-2 transition-colors duration-150"
+                className="flex items-center justify-center gap-1 text-center text-xs font-semibold text-lime-600 hover:text-lime-700 pt-2 transition-colors duration-150"
               >
-                Voir toutes mes candidatures →
+                Voir toutes mes candidatures
+                <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
               </Link>
             </div>
           )}
@@ -346,8 +350,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-extrabold text-gray-900">Dernières offres</p>
             <Link to="/candidat/offres"
-              className="text-xs font-semibold text-lime-600 hover:text-lime-700 bg-lime-50 hover:bg-lime-100 px-3 py-1.5 rounded-lg transition-colors duration-150">
-              Voir tout →
+              className="flex items-center gap-1 text-xs font-semibold text-lime-600 hover:text-lime-700 bg-lime-50 hover:bg-lime-100 px-3 py-1.5 rounded-lg transition-colors duration-150">
+              Voir tout
+              <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
             </Link>
           </div>
 
@@ -380,8 +385,9 @@ export default function Dashboard() {
                       </span>
                     ))}
                   </div>
-                  <p className="text-xs text-lime-600 font-semibold mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    Voir l'offre →
+                  <p className="text-xs text-lime-600 font-semibold mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-1">
+                    Voir l'offre
+                    <ArrowRight className="w-3 h-3" strokeWidth={2.5} />
                   </p>
                 </Link>
               ))}

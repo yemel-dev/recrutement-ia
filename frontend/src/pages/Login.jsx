@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 import heroBg from "../assets/hero-bg.webp";
+import { Brain, Target, BarChart3, Trophy, AlertTriangle, ArrowLeft } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
@@ -111,13 +112,13 @@ export default function Login() {
             </p>
             <div className="flex flex-col gap-3">
               {[
-                { icon: "🧠", label: "Analyse NLP automatique des CV" },
-                { icon: "🎯", label: "Scoring multicritère pondéré" },
-                { icon: "📊", label: "Profil de personnalité Big Five OCEAN" },
-                { icon: "🏆", label: "Classement IA des candidats" },
+                { icon: Brain, label: "Analyse NLP automatique des CV" },
+                { icon: Target, label: "Scoring multicritère pondéré" },
+                { icon: BarChart3, label: "Profil de personnalité Big Five OCEAN" },
+                { icon: Trophy, label: "Classement IA des candidats" },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
-                  <span className="text-lg">{f.icon}</span>
+                  <f.icon className="w-5 h-5 text-lime-400 flex-shrink-0" strokeWidth={2} />
                   <span className="text-sm text-white font-medium">{f.label}</span>
                 </div>
               ))}
@@ -156,7 +157,7 @@ export default function Login() {
           {/* Erreur */}
           {error && (
             <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-              <span>⚠️</span>
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={2} />
               <span>{error}</span>
             </div>
           )}
@@ -232,8 +233,9 @@ export default function Login() {
           </p>
 
           <div className="mt-4 text-center">
-            <Link to="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">
-              ← Retour à l'accueil
+            <Link to="/" className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">
+              <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
+              Retour à l'accueil
             </Link>
           </div>
 

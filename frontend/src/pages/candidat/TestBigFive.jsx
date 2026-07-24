@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
+import { CheckCircle2, Check, ArrowLeft } from "lucide-react";
 
 // Les 25 questions sont renvoyées par le backend dans un ordre fixe :
 // 5 questions par dimension, dans l'ordre O → C → E → A → N (voir questions.py).
@@ -75,7 +76,9 @@ export default function TestBigFive() {
     return (
       <div className="max-w-xl mx-auto text-center space-y-6">
         <div>
-          <div className="w-14 h-14 rounded-full bg-lime-100 flex items-center justify-center text-2xl mx-auto mb-4">✅</div>
+          <div className="w-14 h-14 rounded-full bg-lime-100 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-7 h-7 text-lime-600" strokeWidth={2} />
+          </div>
           <h1 className="text-lg font-extrabold text-gray-900">Test terminé, merci !</h1>
           <p className="text-sm text-gray-500 mt-1">Voici ton profil de personnalité (modèle OCEAN).</p>
         </div>
@@ -136,7 +139,7 @@ export default function TestBigFive() {
                   i === dimensionIndex ? `${d.couleur} text-white` :
                   "bg-gray-200 text-gray-400"}`}
             >
-              {i < dimensionIndex ? "✓" : i + 1}
+              {i < dimensionIndex ? <Check className="w-4 h-4" strokeWidth={2.5} /> : i + 1}
             </div>
             <span className={`text-[11px] mt-1.5 font-medium text-center ${i === dimensionIndex ? "text-gray-900" : "text-gray-400"}`}>
               {d.label}
@@ -192,9 +195,10 @@ export default function TestBigFive() {
           <button
             onClick={() => setCurrent(current - 1)}
             disabled={submitting}
-            className="mt-5 text-xs font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="mt-5 inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600 disabled:opacity-50"
           >
-            ← Question précédente
+            <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
+            Question précédente
           </button>
         )}
       </div>

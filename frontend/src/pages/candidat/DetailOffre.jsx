@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
+import { GraduationCap, CalendarDays, Wrench, BarChart3, Info, Lightbulb, FileText, Paperclip, X, ArrowLeft } from "lucide-react";
 
 const TAILLE_MAX_MO      = 10;
 const EXTENSIONS_ACCEPTEES = [".pdf", ".docx"];
@@ -95,7 +96,7 @@ function ResultatAnalyse({ application, onContinuer }) {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-base">🎓</span>
+              <GraduationCap className="w-4 h-4 text-blue-600" strokeWidth={2} />
             </div>
             <div>
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Formation</p>
@@ -105,7 +106,7 @@ function ResultatAnalyse({ application, onContinuer }) {
 
           <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-base">📅</span>
+              <CalendarDays className="w-4 h-4 text-purple-600" strokeWidth={2} />
             </div>
             <div>
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Expérience</p>
@@ -122,7 +123,9 @@ function ResultatAnalyse({ application, onContinuer }) {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-5 h-5 bg-lime-100 rounded-md flex items-center justify-center text-lime-600 text-xs">🛠</span>
+              <span className="w-5 h-5 bg-lime-100 rounded-md flex items-center justify-center text-lime-600">
+                <Wrench className="w-3 h-3" strokeWidth={2} />
+              </span>
               Compétences détectées
             </h3>
             <span className="text-xs font-semibold bg-lime-100 text-lime-700 px-2 py-0.5 rounded-full">
@@ -147,7 +150,9 @@ function ResultatAnalyse({ application, onContinuer }) {
         {application.score_global !== null && application.score_global !== undefined && (
           <div>
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-blue-100 rounded-md flex items-center justify-center text-blue-600 text-xs">📊</span>
+              <span className="w-5 h-5 bg-blue-100 rounded-md flex items-center justify-center text-blue-600">
+                <BarChart3 className="w-3 h-3" strokeWidth={2} />
+              </span>
               Scores détaillés
             </h3>
             <div className="space-y-2.5">
@@ -158,8 +163,9 @@ function ResultatAnalyse({ application, onContinuer }) {
                 <ScoreBar label="Personnalité" value={application.score_personnalite} />
               )}
             </div>
-            <p className="text-[11px] text-gray-400 mt-3 italic">
-              ℹ️ Le score de personnalité sera mis à jour après votre test Big Five OCEAN.
+            <p className="text-[11px] text-gray-400 mt-3 italic flex items-start gap-1">
+              <Info className="w-3 h-3 flex-shrink-0 mt-0.5" strokeWidth={2} />
+              Le score de personnalité sera mis à jour après votre test Big Five OCEAN.
             </p>
           </div>
         )}
@@ -167,7 +173,7 @@ function ResultatAnalyse({ application, onContinuer }) {
         {/* ── Conseil ── */}
         {competences.length < 3 && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-            <span className="text-lg flex-shrink-0">💡</span>
+            <Lightbulb className="w-4 h-4 flex-shrink-0 text-amber-500" strokeWidth={2} />
             <p className="text-xs text-amber-700">
               <strong>Conseil :</strong> Peu de compétences ont été détectées. Pour améliorer votre score,
               listez vos compétences techniques explicitement dans votre CV (ex : Python, SQL, React...).
@@ -279,8 +285,9 @@ export default function DetailOffre() {
   if (resultat) {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
-        <Link to="/candidat/offres" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
-          ← Retour aux offres
+        <Link to="/candidat/offres" className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600">
+          <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
+          Retour aux offres
         </Link>
         <ResultatAnalyse
           application={resultat}
@@ -294,8 +301,9 @@ export default function DetailOffre() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
 
-      <Link to="/candidat/offres" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
-        ← Retour aux offres
+      <Link to="/candidat/offres" className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 hover:text-gray-600">
+        <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
+        Retour aux offres
       </Link>
 
       {/* Détail de l'offre */}
@@ -338,7 +346,7 @@ export default function DetailOffre() {
             onChange={handleFileChange}
             className="hidden"
           />
-          <div className="text-3xl mb-2">📄</div>
+          <FileText className="w-8 h-8 mb-2 mx-auto text-gray-300" strokeWidth={1.5} />
           <p className="text-sm text-gray-700">
             <span className="font-semibold text-lime-600">Clique ici</span> pour choisir un fichier, ou glisse-le
           </p>
@@ -348,7 +356,7 @@ export default function DetailOffre() {
         {/* Fichier sélectionné */}
         {cvFile && (
           <div className="mt-4 flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-            <span className="text-lg flex-shrink-0">📎</span>
+            <Paperclip className="w-4 h-4 flex-shrink-0 text-gray-400" strokeWidth={2} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-800 truncate">{cvFile.name}</p>
               {submitting ? (
@@ -367,8 +375,8 @@ export default function DetailOffre() {
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setCvFile(null); }}
-                className="text-gray-300 hover:text-red-400 text-sm flex-shrink-0"
-              >✕</button>
+                className="text-gray-300 hover:text-red-400 flex-shrink-0"
+              ><X className="w-4 h-4" strokeWidth={2} /></button>
             )}
           </div>
         )}

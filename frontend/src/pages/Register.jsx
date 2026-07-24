@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 import heroBg from "../assets/hero-bg.webp";
+import { User, FileText, Brain, CheckCircle2, AlertTriangle, ArrowLeft } from "lucide-react";
 
 export default function Register() {
   const { login } = useAuth();
@@ -104,13 +105,13 @@ export default function Register() {
             </p>
             <div className="flex flex-col gap-3">
               {[
-                { icon: "👤", label: "Profil candidat personnalisé" },
-                { icon: "📄", label: "Analyse automatique de votre CV" },
-                { icon: "🧠", label: "Test de personnalité Big Five OCEAN" },
-                { icon: "✅", label: "Matching intelligent poste / profil" },
+                { icon: User, label: "Profil candidat personnalisé" },
+                { icon: FileText, label: "Analyse automatique de votre CV" },
+                { icon: Brain, label: "Test de personnalité Big Five OCEAN" },
+                { icon: CheckCircle2, label: "Matching intelligent poste / profil" },
               ].map((f) => (
                 <div key={f.label} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3">
-                  <span className="text-lg">{f.icon}</span>
+                  <f.icon className="w-5 h-5 text-lime-400 flex-shrink-0" strokeWidth={2} />
                   <span className="text-sm text-white font-medium">{f.label}</span>
                 </div>
               ))}
@@ -149,7 +150,7 @@ export default function Register() {
           {/* Succès */}
           {success && (
             <div className="mb-5 flex items-center gap-3 bg-lime-50 border border-lime-200 text-lime-700 rounded-xl px-4 py-3 text-sm">
-              <span>✅</span>
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
               <span>Compte créé ! Redirection vers la connexion…</span>
             </div>
           )}
@@ -157,7 +158,7 @@ export default function Register() {
           {/* Erreur */}
           {error && (
             <div className="mb-5 flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
-              <span>⚠️</span>
+              <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={2} />
               <span>{error}</span>
             </div>
           )}
@@ -216,7 +217,7 @@ export default function Register() {
             </div>
 
             <div className="flex items-center gap-3 bg-lime-50 border border-lime-100 rounded-xl px-4 py-3">
-              <span className="text-lg">👤</span>
+              <User className="w-4 h-4 text-lime-700 flex-shrink-0" strokeWidth={2} />
               <p className="text-xs text-lime-700 font-medium">
                 Vous serez inscrit en tant que <strong>candidat</strong>. Les comptes recruteurs sont créés par l'administrateur.
               </p>
@@ -267,8 +268,9 @@ export default function Register() {
           </p>
 
           <div className="mt-4 text-center">
-            <Link to="/" className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">
-              ← Retour à l'accueil
+            <Link to="/" className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors duration-200">
+              <ArrowLeft className="w-3 h-3" strokeWidth={2.5} />
+              Retour à l'accueil
             </Link>
           </div>
 

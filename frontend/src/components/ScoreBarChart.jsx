@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Cell, ReferenceLine, LabelList
 } from "recharts";
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -13,8 +14,14 @@ const CustomTooltip = ({ active, payload, label }) => {
       <p className="text-sm font-extrabold" style={{ color }}>
         {(val * 100).toFixed(0)}%
       </p>
-      <p className="text-xs text-gray-400">
-        {val >= 0.7 ? "✅ Excellent" : val >= 0.4 ? "⚠️ Moyen" : "❌ Faible"}
+      <p className="text-xs text-gray-400 flex items-center gap-1">
+        {val >= 0.7 ? (
+          <><CheckCircle2 className="w-3 h-3 text-lime-500" strokeWidth={2} /> Excellent</>
+        ) : val >= 0.4 ? (
+          <><AlertTriangle className="w-3 h-3 text-amber-500" strokeWidth={2} /> Moyen</>
+        ) : (
+          <><XCircle className="w-3 h-3 text-red-500" strokeWidth={2} /> Faible</>
+        )}
       </p>
     </div>
   );

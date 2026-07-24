@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
 import EmptyState from "../../components/EmptyState";
+import { Paperclip, Check, ArrowRight } from "lucide-react";
 
 const STATUT_LABEL = {
   en_attente: "Analyse en cours",
@@ -123,8 +124,9 @@ export default function MesCandidatures() {
             subtitle="Parcours les offres disponibles et envoie ta première candidature."
           />
           <div className="text-center pb-8">
-            <Link to="/candidat/offres" className="text-sm font-semibold text-lime-600 hover:text-lime-700">
-              Voir les offres disponibles →
+            <Link to="/candidat/offres" className="inline-flex items-center gap-1 text-sm font-semibold text-lime-600 hover:text-lime-700">
+              Voir les offres disponibles
+              <ArrowRight className="w-3.5 h-3.5" strokeWidth={2.5} />
             </Link>
           </div>
         </div>
@@ -151,7 +153,8 @@ export default function MesCandidatures() {
                         disabled={telechargementId === c.id}
                         className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 mt-1 disabled:opacity-50"
                       >
-                        📎 {c.cv_filename} · {telechargementId === c.id ? "Téléchargement..." : "Télécharger"}
+                        <Paperclip className="w-3 h-3" strokeWidth={2} />
+                        {c.cv_filename} · {telechargementId === c.id ? "Téléchargement..." : "Télécharger"}
                       </button>
                     )}
                   </div>
@@ -163,8 +166,9 @@ export default function MesCandidatures() {
                 {c.statut === "en_attente" && (
                   <div className="mt-4">
                     {c.competences_extraites ? (
-                      <p className="text-xs text-gray-500">
-                        CV analysé ✓ — passe le{" "}
+                      <p className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
+                        <Check className="w-3 h-3 text-lime-600 flex-shrink-0" strokeWidth={2.5} />
+                        CV analysé — passe le{" "}
                         <Link to="/candidat/test-big-five" className="text-lime-600 font-semibold hover:text-lime-700">
                           test Big Five
                         </Link>{" "}
