@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Paperclip } from "lucide-react";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
 import EmptyState from "../../components/EmptyState";
@@ -11,9 +12,9 @@ const STATUT_LABEL = {
 };
 
 const STATUT_STYLE = {
-  en_attente: "bg-amber-50 text-amber-600",
-  analyse:    "bg-lime-50 text-lime-600",
-  rejete:     "bg-red-50 text-red-500",
+  en_attente: "bg-warning/15 text-warning",
+  analyse:    "bg-success/15 text-success",
+  rejete:     "bg-destructive/10 text-destructive",
 };
 
 const SOUS_SCORES = [
@@ -109,21 +110,21 @@ export default function MesCandidatures() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-extrabold text-gray-900">Mes candidatures</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-lg font-extrabold text-foreground">Mes candidatures</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           {candidatures.length} candidature{candidatures.length > 1 ? "s" : ""} envoyée{candidatures.length > 1 ? "s" : ""} · statut mis à jour automatiquement
         </p>
       </div>
 
       {candidatures.length === 0 ? (
-        <div className="bg-white border border-gray-200 rounded-2xl">
+        <div className="bg-card rounded-3xl shadow-sm">
           <EmptyState
             icon="candidatures"
             title="Tu n'as postulé à aucune offre"
             subtitle="Parcours les offres disponibles et envoie ta première candidature."
           />
           <div className="text-center pb-8">
-            <Link to="/candidat/offres" className="text-sm font-semibold text-lime-600 hover:text-lime-700">
+            <Link to="/candidat/offres" className="text-sm font-semibold text-primary hover:opacity-80">
               Voir les offres disponibles →
             </Link>
           </div>
@@ -135,27 +136,27 @@ export default function MesCandidatures() {
             const scoreDisponible = c.score_global !== null && c.score_global !== undefined;
 
             return (
-              <div key={c.id} className="bg-white border border-gray-200 rounded-2xl p-5">
+              <div key={c.id} className="bg-card rounded-3xl shadow-sm p-5">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="min-w-0">
                     {offre ? (
-                      <Link to={`/candidat/offres/${offre.id}`} className="text-sm font-bold text-gray-900 hover:text-lime-600">
+                      <Link to={`/candidat/offres/${offre.id}`} className="text-sm font-bold text-card-foreground hover:text-primary transition">
                         {offre.titre}
                       </Link>
                     ) : (
-                      <p className="text-sm font-bold text-gray-900">Offre #{c.offre_id}</p>
+                      <p className="text-sm font-bold text-card-foreground">Offre #{c.offre_id}</p>
                     )}
                     {c.cv_filename && (
                       <button
                         onClick={() => telechargerCV(c)}
                         disabled={telechargementId === c.id}
-                        className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 mt-1 disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-card-foreground mt-1 disabled:opacity-50"
                       >
-                        📎 {c.cv_filename} · {telechargementId === c.id ? "Téléchargement..." : "Télécharger"}
+                        <Paperclip className="h-3 w-3" /> {c.cv_filename} · {telechargementId === c.id ? "Téléchargement..." : "Télécharger"}
                       </button>
                     )}
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUT_STYLE[c.statut] || "bg-gray-100 text-gray-500"}`}>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUT_STYLE[c.statut] || "bg-secondary text-muted-foreground"}`}>
                     {STATUT_LABEL[c.statut] || c.statut}
                   </span>
                 </div>
@@ -163,41 +164,41 @@ export default function MesCandidatures() {
                 {c.statut === "en_attente" && (
                   <div className="mt-4">
                     {c.competences_extraites ? (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-muted-foreground">
                         CV analysé ✓ — passe le{" "}
-                        <Link to="/candidat/test-big-five" className="text-lime-600 font-semibold hover:text-lime-700">
+                        <Link to="/candidat/test-big-five" className="text-primary font-semibold hover:opacity-80">
                           test Big Five
                         </Link>{" "}
                         pour obtenir ton score complet.
                       </p>
                     ) : (
                       <>
-                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div className="h-full w-1/2 bg-amber-400 rounded-full animate-pulse" />
+                        <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                          <div className="h-full w-1/2 bg-warning rounded-full animate-pulse" />
                         </div>
-                        <p className="text-xs text-gray-400 mt-1.5">Analyse du CV en cours...</p>
+                        <p className="text-xs text-muted-foreground mt-1.5">Analyse du CV en cours...</p>
                       </>
                     )}
                   </div>
                 )}
 
                 {c.statut === "rejete" && (
-                  <p className="text-xs text-gray-400 mt-3">
+                  <p className="text-xs text-muted-foreground mt-3">
                     Cette candidature a été retirée à la suite d'une modération.
                   </p>
                 )}
 
                 {c.statut === "analyse" && scoreDisponible && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-semibold text-gray-500">Score global</span>
-                      <span className="text-lg font-extrabold text-gray-900">{c.score_global.toFixed(2)}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">Score global</span>
+                      <span className="text-lg font-extrabold text-card-foreground">{c.score_global.toFixed(2)}</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                       {SOUS_SCORES.map((s) => (
-                        <div key={s.key} className="bg-gray-50 rounded-lg px-3 py-2">
-                          <p className="text-[11px] text-gray-400">{s.label}</p>
-                          <p className="text-sm font-bold text-gray-900">
+                        <div key={s.key} className="bg-secondary/60 rounded-xl px-3 py-2">
+                          <p className="text-[11px] text-muted-foreground">{s.label}</p>
+                          <p className="text-sm font-bold text-card-foreground">
                             {c[s.key] !== null && c[s.key] !== undefined ? c[s.key].toFixed(2) : "—"}
                           </p>
                         </div>

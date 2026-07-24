@@ -9,7 +9,10 @@ export default function ProtectedRoute({ children, allowedRole }) {
   }
 
   if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to="/login" replace />;
+    // Redirige vers le bon dashboard selon le vrai rôle
+    if (user.role === "admin")      return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === "recruteur")  return <Navigate to="/recruteur/dashboard" replace />;
+    return <Navigate to="/candidat/offres" replace />;
   }
 
   return children;

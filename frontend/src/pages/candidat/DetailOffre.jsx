@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Check, GraduationCap, CalendarDays, Wrench, BarChart3, Lightbulb, FileText, Paperclip, X, Building2, MapPin, Euro, Clock, Monitor } from "lucide-react";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
 
@@ -14,19 +15,18 @@ function formatTaille(octets) {
 // ─── Barre de score colorée ───────────────────────────────────────────────────
 function ScoreBar({ label, value }) {
   const pct     = Math.round((value || 0) * 100);
-  const couleur = pct >= 70 ? "bg-lime-500" : pct >= 40 ? "bg-amber-400" : "bg-red-400";
+  const couleur = pct >= 70 ? "bg-success" : pct >= 40 ? "bg-warning" : "bg-destructive/70";
+  const texte   = pct >= 70 ? "text-success" : pct >= 40 ? "text-warning" : "text-destructive";
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-gray-500 w-28 flex-shrink-0">{label}</span>
-      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <span className="text-xs text-muted-foreground w-28 flex-shrink-0">{label}</span>
+      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-700 ${couleur}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`text-xs font-bold w-8 text-right ${
-        pct >= 70 ? "text-lime-600" : pct >= 40 ? "text-amber-500" : "text-red-500"
-      }`}>
+      <span className={`text-xs font-bold w-8 text-right ${texte}`}>
         {pct}%
       </span>
     </div>
@@ -36,10 +36,8 @@ function ScoreBar({ label, value }) {
 // ─── Badge compétence ─────────────────────────────────────────────────────────
 function CompetenceBadge({ label }) {
   return (
-    <span className="inline-flex items-center gap-1 bg-lime-50 border border-lime-200 text-lime-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
+    <span className="inline-flex items-center gap-1 bg-accent text-accent-foreground text-xs font-semibold px-2.5 py-1 rounded-full">
+      <Check className="h-3 w-3" strokeWidth={3} />
       {label}
     </span>
   );
@@ -62,29 +60,27 @@ function ResultatAnalyse({ application, onContinuer }) {
   const scoreGlobal = Math.round((application.score_global || 0) * 100);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+    <div className="bg-card rounded-3xl shadow-sm overflow-hidden">
 
       {/* ── En-tête succès ── */}
-      <div className="bg-gradient-to-r from-lime-500 to-lime-400 px-6 py-5">
+      <div className="bg-gradient-to-r from-primary to-primary/70 px-6 py-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
+          <div className="w-10 h-10 bg-primary-foreground/15 rounded-xl flex items-center justify-center">
+            <Check className="h-5 w-5 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <div>
-            <h2 className="text-white font-extrabold text-base">CV analysé avec succès !</h2>
-            <p className="text-lime-100 text-xs mt-0.5">
-              Voici ce que notre IA a extrait de votre CV
+            <h2 className="text-primary-foreground font-extrabold text-base">CV analysé avec succès !</h2>
+            <p className="text-primary-foreground/80 text-xs mt-0.5">
+              Voici ce que notre IA a extrait de ton CV
             </p>
           </div>
           {/* Score global badge */}
           <div className="ml-auto text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 flex flex-col items-center justify-center">
-              <span className="text-white font-extrabold text-lg leading-none">{scoreGlobal}</span>
-              <span className="text-lime-100 text-[10px]">/ 100</span>
+            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 flex flex-col items-center justify-center">
+              <span className="text-primary-foreground font-extrabold text-lg leading-none">{scoreGlobal}</span>
+              <span className="text-primary-foreground/80 text-[10px]">/ 100</span>
             </div>
-            <p className="text-lime-100 text-[10px] mt-1">Score global</p>
+            <p className="text-primary-foreground/80 text-[10px] mt-1">Score global</p>
           </div>
         </div>
       </div>
@@ -93,23 +89,23 @@ function ResultatAnalyse({ application, onContinuer }) {
 
         {/* ── Résumé rapide ── */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-base">🎓</span>
+          <div className="bg-secondary/60 rounded-xl p-3 flex items-center gap-3">
+            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center flex-shrink-0 text-primary">
+              <GraduationCap className="h-4 w-4" strokeWidth={2.2} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Formation</p>
-              <p className="text-sm font-bold text-gray-900">{niveauLabel}</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Formation</p>
+              <p className="text-sm font-bold text-card-foreground">{niveauLabel}</p>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-3 flex items-center gap-3">
-            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-base">📅</span>
+          <div className="bg-secondary/60 rounded-xl p-3 flex items-center gap-3">
+            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center flex-shrink-0 text-primary">
+              <CalendarDays className="h-4 w-4" strokeWidth={2.2} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Expérience</p>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Expérience</p>
+              <p className="text-sm font-bold text-card-foreground">
                 {application.experience_annees
                   ? `${application.experience_annees} an${application.experience_annees > 1 ? "s" : ""}`
                   : "Non détectée"}
@@ -121,11 +117,13 @@ function ResultatAnalyse({ application, onContinuer }) {
         {/* ── Compétences extraites ── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <span className="w-5 h-5 bg-lime-100 rounded-md flex items-center justify-center text-lime-600 text-xs">🛠</span>
+            <h3 className="text-sm font-bold text-card-foreground flex items-center gap-2">
+              <span className="w-5 h-5 bg-accent rounded-md flex items-center justify-center text-primary">
+                <Wrench className="h-3 w-3" strokeWidth={2.2} />
+              </span>
               Compétences détectées
             </h3>
-            <span className="text-xs font-semibold bg-lime-100 text-lime-700 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-semibold bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
               {competences.length} trouvée{competences.length > 1 ? "s" : ""}
             </span>
           </div>
@@ -137,7 +135,7 @@ function ResultatAnalyse({ application, onContinuer }) {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-400 italic">
+            <p className="text-xs text-muted-foreground italic">
               Aucune compétence détectée. Essaie d'enrichir ton CV avec des mots-clés techniques.
             </p>
           )}
@@ -146,8 +144,10 @@ function ResultatAnalyse({ application, onContinuer }) {
         {/* ── Scores détaillés ── */}
         {application.score_global !== null && application.score_global !== undefined && (
           <div>
-            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 bg-blue-100 rounded-md flex items-center justify-center text-blue-600 text-xs">📊</span>
+            <h3 className="text-sm font-bold text-card-foreground mb-3 flex items-center gap-2">
+              <span className="w-5 h-5 bg-accent rounded-md flex items-center justify-center text-primary">
+                <BarChart3 className="h-3 w-3" strokeWidth={2.2} />
+              </span>
               Scores détaillés
             </h3>
             <div className="space-y-2.5">
@@ -158,19 +158,19 @@ function ResultatAnalyse({ application, onContinuer }) {
                 <ScoreBar label="Personnalité" value={application.score_personnalite} />
               )}
             </div>
-            <p className="text-[11px] text-gray-400 mt-3 italic">
-              ℹ️ Le score de personnalité sera mis à jour après votre test Big Five OCEAN.
+            <p className="text-[11px] text-muted-foreground mt-3 italic">
+              Le score de personnalité sera mis à jour après ton test Big Five OCEAN.
             </p>
           </div>
         )}
 
         {/* ── Conseil ── */}
         {competences.length < 3 && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-            <span className="text-lg flex-shrink-0">💡</span>
-            <p className="text-xs text-amber-700">
-              <strong>Conseil :</strong> Peu de compétences ont été détectées. Pour améliorer votre score,
-              listez vos compétences techniques explicitement dans votre CV (ex : Python, SQL, React...).
+          <div className="flex items-start gap-3 bg-warning/10 rounded-xl px-4 py-3">
+            <Lightbulb className="h-5 w-5 text-warning flex-shrink-0" strokeWidth={2} />
+            <p className="text-xs text-warning">
+              <strong>Conseil :</strong> Peu de compétences ont été détectées. Pour améliorer ton score,
+              liste tes compétences techniques explicitement dans ton CV (ex : Python, SQL, React...).
             </p>
           </div>
         )}
@@ -178,17 +178,14 @@ function ResultatAnalyse({ application, onContinuer }) {
         {/* ── Bouton continuer ── */}
         <button
           onClick={onContinuer}
-          className="w-full py-3 rounded-xl bg-lime-500 hover:bg-lime-400 text-white font-bold text-sm transition-all duration-300 shadow-md hover:shadow-lime-200 hover:shadow-lg flex items-center justify-center gap-2"
+          className="w-full py-3 rounded-full bg-primary hover:opacity-90 text-primary-foreground font-bold text-sm transition-all duration-300 shadow-sm flex items-center justify-center gap-2"
         >
           Passer le test de personnalité Big Five
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <line x1="5" y1="12" x2="19" y2="12"/>
-            <polyline points="12 5 19 12 12 19"/>
-          </svg>
+          <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
         </button>
 
-        <p className="text-center text-xs text-gray-400">
-          Le test prend environ 5 minutes et améliore votre score final.
+        <p className="text-center text-xs text-muted-foreground -mt-3">
+          Le test prend environ 5 minutes et améliore ton score final.
         </p>
       </div>
     </div>
@@ -279,8 +276,8 @@ export default function DetailOffre() {
   if (resultat) {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
-        <Link to="/candidat/offres" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
-          ← Retour aux offres
+        <Link to="/candidat/offres" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-card-foreground transition">
+          <ArrowLeft className="h-3.5 w-3.5" /> Retour aux offres
         </Link>
         <ResultatAnalyse
           application={resultat}
@@ -292,22 +289,66 @@ export default function DetailOffre() {
 
   // ── Vue formulaire upload ───────────────────────────────────────────────────
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-5">
 
-      <Link to="/candidat/offres" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
-        ← Retour aux offres
+      <Link to="/candidat/offres" className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-card-foreground transition">
+        <ArrowLeft className="h-3.5 w-3.5" /> Retour aux offres
       </Link>
 
       {/* Détail de l'offre */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
-        <h1 className="text-lg font-extrabold text-gray-900">{offre.titre}</h1>
-        <p className="text-xs text-gray-400 mt-1">
-          {offre.experience_requise} an{offre.experience_requise > 1 ? "s" : ""} d'expérience requis
-        </p>
-        <p className="text-sm text-gray-600 mt-4 leading-relaxed">{offre.description}</p>
+      <div className="bg-card rounded-3xl shadow-sm p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-accent text-primary">
+            <Building2 className="h-5 w-5" strokeWidth={2.2} />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-lg font-extrabold text-card-foreground leading-tight">{offre.titre}</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {offre.entreprise || "Entreprise"}
+              {offre.localisation ? ` · ${offre.localisation}` : ""}
+            </p>
+          </div>
+        </div>
+
+        {/* Tags contrat / niveau / mode */}
+        <div className="flex flex-wrap gap-1.5 mt-4">
+          {[offre.type_contrat, offre.niveau_experience, offre.mode_travail].filter(Boolean).map((tag) => (
+            <span key={tag} className="text-[11px] font-medium bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* Infos clés : localisation / salaire / experience */}
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          {offre.localisation && (
+            <div className="bg-secondary/60 rounded-xl p-3 flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.2} />
+              <span className="text-xs font-semibold text-card-foreground truncate">{offre.localisation}</span>
+            </div>
+          )}
+          {(offre.salaire_min || offre.salaire_max) && (
+            <div className="bg-secondary/60 rounded-xl p-3 flex items-center gap-2">
+              <Euro className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.2} />
+              <span className="text-xs font-semibold text-card-foreground truncate">
+                {offre.salaire_min ? `${Math.round(offre.salaire_min / 1000)}k` : "—"}
+                {" - "}
+                {offre.salaire_max ? `${Math.round(offre.salaire_max / 1000)}k€` : "—"}
+              </span>
+            </div>
+          )}
+          <div className="bg-secondary/60 rounded-xl p-3 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary flex-shrink-0" strokeWidth={2.2} />
+            <span className="text-xs font-semibold text-card-foreground truncate">
+              {offre.experience_requise} an{offre.experience_requise > 1 ? "s" : ""} d'exp.
+            </span>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground mt-4 leading-relaxed">{offre.description}</p>
         <div className="flex flex-wrap gap-1.5 mt-4">
           {offre.competences_requises?.map((c) => (
-            <span key={c} className="text-[11px] font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+            <span key={c} className="text-[11px] font-medium bg-secondary text-secondary-foreground px-2.5 py-1 rounded-full">
               {c}
             </span>
           ))}
@@ -315,9 +356,9 @@ export default function DetailOffre() {
       </div>
 
       {/* Upload CV */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6">
-        <h2 className="text-sm font-bold text-gray-900 mb-1">Postuler à cette offre</h2>
-        <p className="text-xs text-gray-400 mb-4">
+      <div className="bg-card rounded-3xl shadow-sm p-6">
+        <h2 className="text-sm font-bold text-card-foreground mb-1">Postuler à cette offre</h2>
+        <p className="text-xs text-muted-foreground mb-4">
           Dépose ton CV — notre IA l'analyse instantanément et te montre les résultats.
         </p>
 
@@ -327,8 +368,8 @@ export default function DetailOffre() {
           onDragOver={(e) => { e.preventDefault(); setDragActif(true); }}
           onDragLeave={() => setDragActif(false)}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-xl px-5 py-8 text-center cursor-pointer transition-colors duration-150
-            ${dragActif ? "border-lime-500 bg-lime-50" : "border-gray-200 hover:border-lime-300 hover:bg-gray-50"}
+          className={`border-2 border-dashed rounded-2xl px-5 py-8 text-center cursor-pointer transition-colors duration-150
+            ${dragActif ? "border-primary bg-accent" : "border-border hover:border-primary/50 hover:bg-secondary/50"}
             ${submitting ? "pointer-events-none opacity-60" : ""}`}
         >
           <input
@@ -338,63 +379,63 @@ export default function DetailOffre() {
             onChange={handleFileChange}
             className="hidden"
           />
-          <div className="text-3xl mb-2">📄</div>
-          <p className="text-sm text-gray-700">
-            <span className="font-semibold text-lime-600">Clique ici</span> pour choisir un fichier, ou glisse-le
+          <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" strokeWidth={1.6} />
+          <p className="text-sm text-card-foreground">
+            <span className="font-semibold text-primary">Clique ici</span> pour choisir un fichier, ou glisse-le
           </p>
-          <p className="text-xs text-gray-400 mt-1">PDF, DOCX — {TAILLE_MAX_MO} Mo max</p>
+          <p className="text-xs text-muted-foreground mt-1">PDF, DOCX — {TAILLE_MAX_MO} Mo max</p>
         </div>
 
         {/* Fichier sélectionné */}
         {cvFile && (
-          <div className="mt-4 flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3">
-            <span className="text-lg flex-shrink-0">📎</span>
+          <div className="mt-4 flex items-center gap-3 bg-secondary/60 rounded-2xl px-4 py-3">
+            <Paperclip className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 truncate">{cvFile.name}</p>
+              <p className="text-sm font-semibold text-card-foreground truncate">{cvFile.name}</p>
               {submitting ? (
-                <div className="w-full h-1.5 bg-gray-200 rounded-full mt-1.5 overflow-hidden">
+                <div className="w-full h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
                   <div
-                    className="h-full bg-lime-500 rounded-full transition-all duration-200"
+                    className="h-full bg-primary rounded-full transition-all duration-200"
                     style={{ width: `${progression}%` }}
                   />
                 </div>
               ) : (
-                <p className="text-xs text-gray-400">{formatTaille(cvFile.size)}</p>
+                <p className="text-xs text-muted-foreground">{formatTaille(cvFile.size)}</p>
               )}
             </div>
             {submitting ? (
-              <span className="text-xs font-semibold text-lime-600 flex-shrink-0">{progression}%</span>
+              <span className="text-xs font-semibold text-primary flex-shrink-0">{progression}%</span>
             ) : (
               <button
                 onClick={(e) => { e.stopPropagation(); setCvFile(null); }}
-                className="text-gray-300 hover:text-red-400 text-sm flex-shrink-0"
-              >✕</button>
+                className="text-muted-foreground/50 hover:text-destructive flex-shrink-0"
+              ><X className="h-4 w-4" /></button>
             )}
           </div>
         )}
 
         {/* Message pendant l'analyse IA */}
         {submitting && progression === 100 && (
-          <div className="mt-4 flex items-center gap-3 bg-lime-50 border border-lime-100 rounded-xl px-4 py-3">
-            <svg className="animate-spin w-4 h-4 text-lime-500 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+          <div className="mt-4 flex items-center gap-3 bg-accent rounded-2xl px-4 py-3">
+            <svg className="animate-spin w-4 h-4 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
             </svg>
             <div>
-              <p className="text-xs font-bold text-lime-700">Analyse IA en cours…</p>
-              <p className="text-[11px] text-lime-600">
-                spaCy et Sentence-BERT analysent votre CV. Quelques secondes…
+              <p className="text-xs font-bold text-accent-foreground">Analyse IA en cours…</p>
+              <p className="text-[11px] text-accent-foreground/80">
+                spaCy et Sentence-BERT analysent ton CV. Quelques secondes…
               </p>
             </div>
           </div>
         )}
 
-        {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
+        {error && <p className="text-sm text-destructive mt-3">{error}</p>}
 
         <button
           onClick={handlePostuler}
           disabled={submitting || !cvFile}
-          className="w-full mt-5 bg-lime-500 hover:bg-lime-400 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm font-bold py-2.5 rounded-lg transition-colors duration-200"
+          className="w-full mt-5 bg-primary hover:opacity-90 disabled:bg-secondary disabled:text-muted-foreground disabled:cursor-not-allowed text-primary-foreground text-sm font-bold py-2.5 rounded-full transition-colors duration-200"
         >
           {submitting
             ? progression < 100

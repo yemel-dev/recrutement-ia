@@ -12,7 +12,7 @@ import DetailOffre       from "./pages/candidat/DetailOffre";
 import TestBigFive       from "./pages/candidat/TestBigFive";
 import MesCandidatures   from "./pages/candidat/MesCandidatures";
 import MonProfil         from "./pages/candidat/MonProfil";
-
+import AdminDashboard from "./pages/admin/Dashboard";
 // Pages recruteur
 import Dashboard          from "./pages/recruteur/Dashboard";
 import CreerOffre         from "./pages/recruteur/CreerOffre";
@@ -64,7 +64,8 @@ function App() {
         element={<PrivatePage role="recruteur"><ToutesCandidatures /></PrivatePage>} />
       <Route path="/recruteur/candidats/:applicationId"
         element={<PrivatePage role="recruteur"><FicheCandidat /></PrivatePage>} />
-
+<Route path="/admin/dashboard"
+  element={<PrivatePage role="admin"><AdminDashboard /></PrivatePage>} />
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

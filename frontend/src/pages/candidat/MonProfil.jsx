@@ -77,38 +77,38 @@ export default function MonProfil() {
   const initiales = `${user?.prenom?.[0] || ""}${user?.nom?.[0] || ""}`.toUpperCase();
 
   const roleBadge = {
-    candidat:  { label: "Candidat",  bg: "bg-lime-100",   text: "text-lime-700"   },
+    candidat:  { label: "Candidat",  bg: "bg-success/15",   text: "text-success"   },
     recruteur: { label: "Recruteur", bg: "bg-blue-100",   text: "text-blue-700"   },
     admin:     { label: "Admin",     bg: "bg-purple-100", text: "text-purple-700" },
-  }[user?.role] || { label: user?.role, bg: "bg-gray-100", text: "text-gray-700" };
+  }[user?.role] || { label: user?.role, bg: "bg-secondary", text: "text-foreground" };
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
 
       {/* En-tete */}
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-gray-900">Mon profil</h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <h1 className="text-2xl font-extrabold text-foreground">Mon profil</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Gerez vos informations personnelles et votre presence en ligne
         </p>
       </div>
 
       {/* Alertes */}
       {success && (
-        <div className="mb-6 flex items-center gap-3 bg-lime-50 border border-lime-200 text-lime-700 rounded-xl px-4 py-3 text-sm">
+        <div className="mb-6 flex items-center gap-3 bg-success/15 border border-success/30 text-success rounded-xl px-4 py-3 text-sm">
           <span>OK</span>
           <span>{success}</span>
         </div>
       )}
       {error && (
-        <div className="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+        <div className="mb-6 flex items-center gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 text-sm">
           <span>!</span>
           <span>{error}</span>
         </div>
       )}
 
       {/* Carte photo + identite */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
+      <div className="bg-card rounded-3xl shadow-sm p-6 mb-6">
         <div className="flex items-center gap-6">
 
           {/* Avatar */}
@@ -117,10 +117,10 @@ export default function MonProfil() {
               <img
                 src={`http://localhost:8000${user.photo_url}`}
                 alt="Photo de profil"
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-lime-100"
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-border"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-lime-400 to-lime-600 flex items-center justify-center text-white font-extrabold text-2xl shadow-md">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-primary flex items-center justify-center text-white font-extrabold text-2xl shadow-md">
                 {initiales}
               </div>
             )}
@@ -129,7 +129,7 @@ export default function MonProfil() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={photoLoading}
-              className="absolute -bottom-2 -right-2 w-7 h-7 bg-lime-500 hover:bg-lime-400 rounded-full flex items-center justify-center shadow-md transition-all duration-200 disabled:opacity-60"
+              className="absolute -bottom-2 -right-2 w-7 h-7 bg-primary hover:opacity-90 rounded-full flex items-center justify-center shadow-md transition-all duration-200 disabled:opacity-60"
               title="Changer la photo"
             >
               {photoLoading ? (
@@ -158,16 +158,16 @@ export default function MonProfil() {
           {/* Infos identite */}
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-xl font-extrabold text-gray-900">
+              <h2 className="text-xl font-extrabold text-foreground">
                 {user?.prenom} {user?.nom}
               </h2>
               <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${roleBadge.bg} ${roleBadge.text}`}>
                 {roleBadge.label}
               </span>
             </div>
-            <p className="text-gray-500 text-sm mt-1">{user?.email}</p>
+            <p className="text-muted-foreground text-sm mt-1">{user?.email}</p>
             {user?.localisation && (
-              <p className="text-gray-400 text-xs mt-1 flex items-center gap-1">
+              <p className="text-muted-foreground text-xs mt-1 flex items-center gap-1">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
                   <circle cx="12" cy="10" r="3"/>
@@ -175,7 +175,7 @@ export default function MonProfil() {
                 {user.localisation}
               </p>
             )}
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Cliquez sur l'icone pour changer votre photo (JPG, PNG, WEBP - 5 Mo max)
             </p>
           </div>
@@ -186,9 +186,9 @@ export default function MonProfil() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
         {/* Informations personnelles */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="w-6 h-6 bg-lime-100 rounded-lg flex items-center justify-center text-lime-600 text-xs">
+        <div className="bg-card rounded-3xl shadow-sm p-6">
+          <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
+            <span className="w-6 h-6 bg-accent rounded-lg flex items-center justify-center text-primary text-xs">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
                 <circle cx="12" cy="7" r="4"/>
@@ -227,8 +227,8 @@ export default function MonProfil() {
 
           {/* Bio */}
           <div className="mt-4 flex flex-col gap-1.5">
-            <label className="text-sm font-semibold text-gray-700">
-              Bio <span className="text-gray-400 font-normal">(optionnel)</span>
+            <label className="text-sm font-semibold text-foreground">
+              Bio <span className="text-muted-foreground font-normal">(optionnel)</span>
             </label>
             <textarea
               value={form.bio}
@@ -236,17 +236,17 @@ export default function MonProfil() {
               placeholder="Decrivez-vous en quelques mots : vos competences, vos ambitions..."
               rows={3}
               maxLength={1000}
-              className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400 resize-none"
+              className="px-4 py-3 rounded-xl border border-border bg-card text-card-foreground text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 placeholder:text-muted-foreground resize-none"
             />
-            <p className="text-xs text-gray-400 text-right">
+            <p className="text-xs text-muted-foreground text-right">
               {form.bio.length}/1000
             </p>
           </div>
         </div>
 
         {/* Liens professionnels */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-3xl shadow-sm p-6">
+          <h3 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
             <span className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-xs">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
@@ -269,7 +269,7 @@ export default function MonProfil() {
               value={form.github_url}
               onChange={(v) => setForm({ ...form, github_url: v })}
               placeholder="https://github.com/votre-pseudo"
-              color="text-gray-800"
+              color="text-foreground"
             />
             <LinkField
               label="Portfolio"
@@ -285,7 +285,7 @@ export default function MonProfil() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 rounded-xl bg-lime-500 hover:bg-lime-400 disabled:bg-lime-300 text-white font-bold text-sm transition-all duration-300 shadow-md flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-xl bg-primary hover:opacity-90 disabled:opacity-60 text-white font-bold text-sm transition-all duration-300 shadow-md flex items-center justify-center gap-2"
         >
           {loading ? (
             <>
@@ -315,13 +315,13 @@ export default function MonProfil() {
 function Field({ label, value, onChange, placeholder, type = "text" }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-semibold text-gray-700">{label}</label>
+      <label className="text-sm font-semibold text-foreground">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
+        className="px-4 py-3 rounded-xl border border-border bg-card text-card-foreground text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 placeholder:text-muted-foreground"
       />
     </div>
   );
@@ -336,7 +336,7 @@ function LinkField({ label, value, onChange, placeholder, color }) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 text-sm outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100 transition-all duration-200 placeholder:text-gray-400"
+        className="px-4 py-3 rounded-xl border border-border bg-card text-card-foreground text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 placeholder:text-muted-foreground"
       />
     </div>
   );

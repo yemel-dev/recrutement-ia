@@ -1,83 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { Search, ChevronRight } from "lucide-react";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
-import EmptyState from "../../components/EmptyState";
-import ScoreBarChart from "../../components/ScoreBarChart";
+import LeftSidebar from "../../components/candidat/LeftSidebar";
+import JobCard from "../../components/candidat/JobCard";
+import ScoresChart from "../../components/candidat/ScoresChart";
+import ApplicationsList from "../../components/candidat/ApplicationsList";
 
-const STATUT_LABEL = {
-  en_attente: "En cours",
-  analyse:    "Analysée",
-  rejete:     "Rejetée",
-};
-
-const STATUT_STYLE = {
-  en_attente: "bg-amber-50 text-amber-600 border border-amber-200",
-  analyse:    "bg-lime-50 text-lime-600 border border-lime-200",
-  rejete:     "bg-red-50 text-red-500 border border-red-200",
-};
-
-// Carte stat style Zodex avec bordure colorée en bas
-function StatCard({ icon, value, label, sublabel, bg, border, trend }) {
-  return (
-    <div
-      className="rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between min-h-[145px]"
-      style={{
-        background: bg,
-        border: "2px solid #111",
-        boxShadow: "4px 4px 0px #111",
-      }}
-    >
-      {/* Icône */}
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
-        style={{ background: "#111" }}
-      >
-        {icon}
-      </div>
-
-      {/* Valeur + label */}
-      <div>
-        <p className="text-3xl font-extrabold text-gray-900 leading-none">{value}</p>
-        <p className="text-sm text-gray-700 mt-1 font-medium">{label}</p>
-
-        {/* Trend */}
-        {trend !== undefined && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <span
-              className="text-xs font-extrabold px-2 py-0.5 rounded-full"
-              style={{
-                background: trend >= 0 ? "#bbf7d0" : "#fee2e2",
-                color: trend >= 0 ? "#15803d" : "#dc2626",
-                border: trend >= 0 ? "1px solid #86efac" : "1px solid #fca5a5",
-              }}
-            >
-              {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
-            </span>
-            <span className="text-xs text-gray-500">ce mois</span>
-          </div>
-        )}
-
-        {sublabel && (
-          <p className="text-xs text-gray-500 mt-1">{sublabel}</p>
-        )}
-      </div>
-
-      {/* Décoration cercle fond */}
-      <div
-        className="absolute -right-4 -bottom-4 w-20 h-20 rounded-full opacity-20"
-        style={{ background: border }}
-      />
-    </div>
-  );
-}
+const FILTERS = [
+  { id: "toutes",     label: "Toutes"    },
+  { id: "en_attente", label: "En cours"  },
+  { id: "analyse",    label: "Analysées" },
+  { id: "rejete",     label: "Rejetées"  },
+];
 
 export default function Dashboard() {
-  const [prenom, setPrenom]           = useState("");
-  const [offres, setOffres]           = useState([]);
+  const [prenom, setPrenom]             = useState("");
+  const [offres, setOffres]             = useState([]);
   const [candidatures, setCandidatures] = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [error, setError]             = useState("");
+  const [loading, setLoading]           = useState(true);
+  const [error, setError]               = useState("");
+  const [filtre, setFiltre]             = useState("toutes");
+  const [recherche, setRecherche]       = useState("");
   const pollRef = useRef(null);
 
   const chargerCandidatures = async () => {
@@ -124,272 +69,135 @@ export default function Dashboard() {
   if (loading) return <StatusMessage type="loading" />;
   if (error)   return <StatusMessage type="error" message={error} />;
 
-  const offresActives        = offres.filter((o) => o.is_active);
-  const candidaturesScorees  = candidatures.filter((c) => c.score_global != null);
-  const candidaturesEnCours  = candidatures.filter((c) => c.statut === "en_attente");
-  const dernieresOffres      = [...offresActives]
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 3);
-  const offreParId           = (id) => offres.find((o) => o.id === id);
+  const offresActives       = offres.filter((o) => o.is_active);
+  const candidaturesScorees = candidatures.filter((c) => c.score_global != null);
+  const offreParId          = (id) => offres.find((o) => o.id === id);
 
   const scoresMoyen = candidaturesScorees.length
-    ? (candidaturesScorees.reduce((s, c) => s + c.score_global, 0) / candidaturesScorees.length * 100).toFixed(0)
-    : null;
+    ? Math.round(candidaturesScorees.reduce((s, c) => s + c.score_global, 0) / candidaturesScorees.length * 100)
+    : 0;
+
+  const nbHaut   = candidaturesScorees.filter((c) => c.score_global >= 0.7).length;
+  const nbMoyen  = candidaturesScorees.filter((c) => c.score_global >= 0.4 && c.score_global < 0.7).length;
+  const nbBas    = candidaturesScorees.filter((c) => c.score_global < 0.4).length;
+  const totalSco = candidaturesScorees.length || 1;
+
+  const breakdown = [
+    { label: "Score ≥ 70%", value: Math.round((nbHaut  / totalSco) * 100), band: "high" },
+    { label: "Score ≥ 40%", value: Math.round((nbMoyen / totalSco) * 100), band: "mid"  },
+    { label: "Score < 40%", value: Math.round((nbBas   / totalSco) * 100), band: "low"  },
+  ];
 
   const dataGraphique = candidaturesScorees
     .slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
     .slice(-8)
     .map((c) => ({
       label: offreParId(c.offre_id)?.titre || `Offre #${c.offre_id}`,
-      value: c.score_global,
+      score: Math.round(c.score_global * 100),
     }));
 
+  const candidaturesFiltrees = filtre === "toutes"
+    ? candidatures
+    : candidatures.filter((c) => c.statut === filtre);
+
+  const offresFiltrees = offresActives.filter((o) =>
+    o.titre.toLowerCase().includes(recherche.toLowerCase())
+  );
+
+  const stats = [
+    { value: offresActives.length, label: "Offres actives" },
+    { value: candidatures.length, label: "Candidatures" },
+    { value: candidaturesScorees.length, label: "Analysées" },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto flex max-w-[1300px] flex-col gap-5 lg:flex-row">
+      <LeftSidebar average={scoresMoyen} breakdown={breakdown} />
 
-      {/* ── Bannière bienvenue ──────────────────────────────────────────── */}
-      <div className="bg-white border border-gray-100 rounded-2xl p-6 flex items-center justify-between flex-wrap gap-4 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900">
-            Bonjour{prenom ? `, ${prenom}` : ""} 👋
-          </h1>
-          <p className="text-sm text-gray-400 mt-1">
-            Suis l'analyse de tes candidatures et découvre les offres qui te correspondent.
-          </p>
-          {scoresMoyen && (
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs text-gray-400">Score moyen :</span>
-              <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full
-                ${parseInt(scoresMoyen) >= 70 ? "bg-lime-100 text-lime-700" :
-                  parseInt(scoresMoyen) >= 40 ? "bg-amber-100 text-amber-700" :
-                  "bg-red-100 text-red-600"}`}>
-                {scoresMoyen}%
-              </span>
-            </div>
-          )}
-        </div>
-        <Link
-          to="/candidat/offres"
-          className="bg-lime-500 hover:bg-lime-400 text-white text-sm font-bold px-6 py-3 rounded-xl transition-all duration-200 shadow-md hover:shadow-lime-200"
-        >
-          Parcourir les offres
-        </Link>
-      </div>
+      <main className="min-w-0 flex-1">
+        {/* Header */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>Tableau de bord</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <span className="font-medium text-card-foreground">Mon activité</span>
+            </nav>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-foreground">
+              Bonjour{prenom ? `, ${prenom}` : ""} <span className="align-middle">👋</span>
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Suis l'analyse de tes candidatures et découvre les offres qui te correspondent.
+            </p>
+          </div>
 
-      {/* ── 4 Cartes stats + Graphique ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Grille 2×2 cartes */}
-        <div className="grid grid-cols-2 gap-4">
-          <StatCard
-  icon="💼"
-  value={offresActives.length}
-  label="Offres disponibles"
-  sublabel={`${offresActives.length} active${offresActives.length > 1 ? "s" : ""}`}
-  bg="#bbf7d0"
-  border="#16a34a"
-  trend={15}
-/>
-<StatCard
-  icon="👤"
-  value={candidatures.length}
-  label="Candidatures envoyées"
-  sublabel="Total cumulé"
-  bg="#e9d5ff"
-  border="#9333ea"
-  trend={4}
-/>
-<StatCard
-  icon="🎯"
-  value={candidaturesScorees.length}
-  label="Analysées"
-  sublabel={scoresMoyen ? `Moy. ${scoresMoyen}%` : "En attente"}
-  bg="#fef08a"
-  border="#ca8a04"
-  trend={10}
-/>
-<StatCard
-  icon="⏳"
-  value={candidaturesEnCours.length}
-  label="En cours d'analyse"
-  sublabel={candidaturesEnCours.length > 0 ? "Traitement en cours…" : "Tout est traité ✓"}
-  bg="#fbcfe8"
-  border="#db2777"
-/>
-        </div>
-
-        {/* Graphique */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-1">
-            <div>
-              <p className="text-sm font-extrabold text-gray-900">Résultats de mes analyses</p>
-              <p className="text-xs text-gray-400">Score global par candidature analysée</p>
-            </div>
-            {dataGraphique.length > 0 && (
-              <div className="flex items-center gap-3 text-xs">
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-lime-400 inline-block"/>
-                  <span className="text-gray-400">≥70%</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"/>
-                  <span className="text-gray-400">≥40%</span>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-400 inline-block"/>
-                  <span className="text-gray-400">&lt;40%</span>
-                </span>
+          <div className="flex items-center gap-8">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-3xl font-bold tracking-tight text-foreground">{s.value}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{s.label}</p>
               </div>
-            )}
+            ))}
           </div>
-
-          {dataGraphique.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="text-4xl mb-3">📊</div>
-              <p className="text-sm font-semibold text-gray-400">Aucune analyse disponible</p>
-              <p className="text-xs text-gray-300 mt-1">
-                Ton premier score apparaîtra ici après analyse de ta candidature.
-              </p>
-            </div>
-          ) : (
-            <ScoreBarChart data={dataGraphique} height={190} />
-          )}
         </div>
-      </div>
 
-      {/* ── Candidatures + Dernières offres ─────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-        {/* Mes candidatures */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-extrabold text-gray-900">Mes candidatures</p>
-            {candidaturesEnCours.length > 0 && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                {candidaturesEnCours.length} en cours
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-gray-400 mb-4">Statut mis à jour automatiquement</p>
-
-          {candidatures.length === 0 ? (
-            <EmptyState
-              icon="candidatures"
-              title="Aucune candidature pour l'instant"
-              subtitle="Postule à une offre pour voir son analyse ici."
-            />
-          ) : (
-            <div className="space-y-2.5">
-              {candidatures.slice(0, 5).map((c) => {
-                const offre = offreParId(c.offre_id);
-                const pct = c.score_global != null
-                  ? Math.round(c.score_global * 100) : null;
-                return (
-                  <div key={c.id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-150">
-                    <div className="w-9 h-9 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-sm flex-shrink-0 shadow-sm">
-                      💼
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {offre?.titre || `Offre #${c.offre_id}`}
-                      </p>
-                      {c.statut === "en_attente" ? (
-                        c.competences_extraites ? (
-                          <p className="text-xs text-blue-500 mt-0.5 font-medium">
-                            CV analysé ✓ — en attente du test Big Five
-                          </p>
-                        ) : (
-                          <div className="mt-1.5">
-                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div className="h-full w-1/2 bg-amber-400 rounded-full animate-pulse" />
-                            </div>
-                            <p className="text-xs text-gray-400 mt-0.5">Analyse en cours…</p>
-                          </div>
-                        )
-                      ) : (
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {pct != null && (
-                            <>
-                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${pct >= 70 ? "bg-lime-400" : pct >= 40 ? "bg-amber-400" : "bg-red-400"}`}
-                                  style={{ width: `${pct}%` }}
-                                />
-                              </div>
-                              <span className={`text-xs font-bold ${pct >= 70 ? "text-lime-600" : pct >= 40 ? "text-amber-600" : "text-red-500"}`}>
-                                {pct}%
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${STATUT_STYLE[c.statut] || "bg-gray-100 text-gray-500"}`}>
-                      {STATUT_LABEL[c.statut] || c.statut}
-                    </span>
-                  </div>
-                );
-              })}
-              <Link
-                to="/candidat/mes-candidatures"
-                className="block text-center text-xs font-semibold text-lime-600 hover:text-lime-700 pt-2 transition-colors duration-150"
+        {/* Filtres + recherche */}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-1.5 rounded-full bg-secondary p-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFiltre(f.id)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition ${
+                  filtre === f.id
+                    ? "bg-foreground text-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
               >
-                Voir toutes mes candidatures →
-              </Link>
-            </div>
-          )}
-        </div>
+                {f.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Dernières offres */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-extrabold text-gray-900">Dernières offres</p>
-            <Link to="/candidat/offres"
-              className="text-xs font-semibold text-lime-600 hover:text-lime-700 bg-lime-50 hover:bg-lime-100 px-3 py-1.5 rounded-lg transition-colors duration-150">
-              Voir tout →
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder="Rechercher un poste"
+                className="w-44 rounded-full border border-border bg-card py-2 pl-9 pr-3 text-sm text-card-foreground outline-none transition placeholder:text-muted-foreground focus:w-56 focus:ring-2 focus:ring-primary/40"
+              />
+            </div>
+            <Link
+              to="/candidat/offres"
+              className="whitespace-nowrap rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+            >
+              Parcourir les offres
             </Link>
           </div>
-
-          {dernieresOffres.length === 0 ? (
-            <EmptyState
-              icon="offres"
-              title="Aucune offre disponible"
-              subtitle="Reviens un peu plus tard."
-            />
-          ) : (
-            <div className="space-y-3">
-              {dernieresOffres.map((offre) => (
-                <Link
-                  key={offre.id}
-                  to={`/candidat/offres/${offre.id}`}
-                  className="block p-4 rounded-xl border border-gray-100 hover:border-lime-300 hover:bg-lime-50/50 transition-all duration-200 group"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-bold text-gray-900 group-hover:text-lime-700 transition-colors duration-150">
-                      {offre.titre}
-                    </p>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
-                      {offre.experience_requise} an{offre.experience_requise > 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {offre.competences_requises?.slice(0, 4).map((c) => (
-                      <span key={c} className="text-xs font-medium bg-gray-100 group-hover:bg-lime-100 text-gray-500 group-hover:text-lime-700 px-2 py-0.5 rounded-full transition-colors duration-150">
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-xs text-lime-600 font-semibold mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    Voir l'offre →
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
 
-      </div>
+        {/* Grille offres */}
+        {offresFiltrees.length > 0 ? (
+          <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {offresFiltrees.slice(0, 6).map((offre) => (
+              <JobCard key={offre.id} offre={offre} />
+            ))}
+          </div>
+        ) : (
+          <div className="mt-5 rounded-3xl bg-card p-10 text-center text-sm text-muted-foreground shadow-sm">
+            Aucune offre ne correspond à ta recherche.
+          </div>
+        )}
+
+        {/* Graphique + candidatures */}
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ScoresChart data={dataGraphique} />
+          <ApplicationsList candidatures={candidaturesFiltrees} offreParId={offreParId} />
+        </div>
+      </main>
     </div>
   );
 }

@@ -1,1 +1,31 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: oklch(0.978 0.002 247);
+  --color-foreground: oklch(0.21 0.02 250);
+  --color-primary: oklch(0.72 0.17 145);
+  --color-primary-foreground: oklch(0.2 0.05 150);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.21 0.02 250);
+  --color-secondary: oklch(0.96 0.003 247);
+  --color-secondary-foreground: oklch(0.28 0.02 250);
+  --color-muted: oklch(0.96 0.003 247);
+  --color-muted-foreground: oklch(0.55 0.015 250);
+  --color-accent: oklch(0.95 0.05 145);
+  --color-accent-foreground: oklch(0.35 0.08 150);
+  --color-destructive: oklch(0.63 0.21 25);
+  --color-destructive-foreground: oklch(0.99 0 0);
+  --color-success: oklch(0.72 0.17 145);
+  --color-success-foreground: oklch(0.99 0 0);
+  --color-warning: oklch(0.79 0.15 75);
+  --color-warning-foreground: oklch(0.3 0.06 70);
+  --color-border: oklch(0.925 0.004 247);
+}
+
+body {
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}

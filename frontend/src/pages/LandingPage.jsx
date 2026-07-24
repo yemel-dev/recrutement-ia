@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import heroBg from "../assets/hero-bg.webp";
+import { Zap, Star, ArrowUpRight, ArrowRight, FileText, Brain, Trophy } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -92,7 +93,9 @@ export default function LandingPage() {
                 className="group text-sm font-bold bg-lime-500 hover:bg-lime-400 text-white px-7 py-3.5 rounded-full transition-all duration-300 shadow-lg hover:shadow-lime-400/40 hover:shadow-xl flex items-center gap-2"
               >
                 Créer un compte gratuit
-                <span className="bg-white/20 group-hover:bg-white/30 rounded-full w-6 h-6 flex items-center justify-center text-xs transition-all duration-200">↗</span>
+                <span className="bg-white/20 group-hover:bg-white/30 rounded-full w-6 h-6 flex items-center justify-center transition-all duration-200">
+                  <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                </span>
               </Link>
             </div>
 
@@ -106,7 +109,14 @@ export default function LandingPage() {
                 ))}
               </div>
               <div className="text-left">
-                <div className="text-lime-400 text-sm">★★★★★ <span className="font-bold text-white">5.0</span></div>
+                <div className="flex items-center gap-1 text-lime-400 text-sm">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-lime-400 text-lime-400" />
+                    ))}
+                  </div>
+                  <span className="font-bold text-white ml-1">5.0</span>
+                </div>
                 <p className="text-xs text-gray-400">200+ Témoignages</p>
               </div>
             </div>
@@ -118,7 +128,7 @@ export default function LandingPage() {
             {/* Card 1 */}
             <div className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1 cursor-pointer">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-lime-400 text-2xl">⚡</span>
+                <Zap className="text-lime-400 w-6 h-6" strokeWidth={2.5} />
                 <h3 className="font-bold text-white text-sm">Analyse IA instantanée</h3>
               </div>
               <p className="text-xs text-gray-300 leading-relaxed mb-4">
@@ -196,21 +206,21 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: "📄",
+                icon: <FileText className="w-6 h-6 text-lime-600" strokeWidth={2} />,
                 title: "Analyse CV par NLP",
                 desc: "spaCy et Sentence-BERT extraient compétences, expérience et formation de chaque CV automatiquement.",
                 bg: "bg-lime-50", border: "border-lime-100", iconBg: "bg-lime-100",
                 hover: "hover:border-lime-300 hover:shadow-lime-100",
               },
               {
-                icon: "🧠",
+                icon: <Brain className="w-6 h-6 text-blue-600" strokeWidth={2} />,
                 title: "Psychométrie Big Five",
                 desc: "Test IPIP validé scientifiquement : 25 questions pour mesurer les 5 traits de personnalité OCEAN.",
                 bg: "bg-blue-50", border: "border-blue-100", iconBg: "bg-blue-100",
                 hover: "hover:border-blue-300 hover:shadow-blue-100",
               },
               {
-                icon: "🏆",
+                icon: <Trophy className="w-6 h-6 text-purple-600" strokeWidth={2} />,
                 title: "Classement IA",
                 desc: "Score multicritère pondéré : compétences 40%, expérience 25%, formation 20%, personnalité 15%.",
                 bg: "bg-purple-50", border: "border-purple-100", iconBg: "bg-purple-100",
@@ -258,8 +268,8 @@ export default function LandingPage() {
                   <div className="font-bold text-gray-900 mb-0.5">{s.title}</div>
                   <div className="text-sm text-gray-500">{s.desc}</div>
                 </div>
-                <div className="text-gray-200 group-hover:text-lime-400 transition-colors duration-300 text-xl self-center">
-                  →
+                <div className="text-gray-200 group-hover:text-lime-400 transition-colors duration-300 self-center">
+                  <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
                 </div>
               </div>
             ))}
@@ -309,7 +319,9 @@ export default function LandingPage() {
               className="group bg-white hover:bg-gray-50 text-lime-600 font-bold px-8 py-3.5 rounded-full text-sm transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
             >
               Démarrer maintenant
-              <span className="bg-lime-100 group-hover:bg-lime-200 rounded-full w-6 h-6 flex items-center justify-center text-xs transition-all duration-200">↗</span>
+              <span className="bg-lime-100 group-hover:bg-lime-200 rounded-full w-6 h-6 flex items-center justify-center transition-all duration-200">
+                <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+              </span>
             </Link>
             <Link
               to="/login"
