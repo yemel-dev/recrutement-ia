@@ -47,7 +47,7 @@ function CompetenceBadge({ label }) {
 function ResultatAnalyse({ application, onContinuer }) {
   const competences = Array.isArray(application.competences_extraites)
     ? application.competences_extraites
-    : [];
+    : JSON.parse(application.competences_extraites || "[]");
 
   const niveauLabel = {
     DOCTORAT: "Doctorat",
@@ -57,7 +57,8 @@ function ResultatAnalyse({ application, onContinuer }) {
     AUTRE:    "Autre",
   }[application.formation_niveau?.toUpperCase()] || application.formation_niveau || "Non détecté";
 
-  const scoreGlobal = Math.round((application.score_global || 0) * 100);
+  const scoreDisponible = application.score_global !== null && application.score_global !== undefined;
+const scoreGlobal = scoreDisponible ? Math.round(application.score_global * 100) : null;
 
   return (
     <div className="bg-card rounded-3xl shadow-sm overflow-hidden">
@@ -77,8 +78,12 @@ function ResultatAnalyse({ application, onContinuer }) {
           {/* Score global badge */}
           <div className="ml-auto text-center">
             <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 flex flex-col items-center justify-center">
-              <span className="text-primary-foreground font-extrabold text-lg leading-none">{scoreGlobal}</span>
-              <span className="text-primary-foreground/80 text-[10px]">/ 100</span>
+              <span className="text-primary-foreground font-extrabold text-lg leading-none">
+  {scoreDisponible ? scoreGlobal : "—"}
+</span>
+<span className="text-primary-foreground/80 text-[10px]">
+  {scoreDisponible ? "/ 100" : "en attente"}
+</span>
             </div>
             <p className="text-primary-foreground/80 text-[10px] mt-1">Score global</p>
           </div>
@@ -164,6 +169,17 @@ function ResultatAnalyse({ application, onContinuer }) {
           </div>
         )}
 
+        {/* ── Message si score pas encore dispo (Big Five non passé) ── */}
+        {(application.score_global === null || application.score_global === undefined) && (
+          <div className="flex items-start gap-3 bg-secondary/60 rounded-xl px-4 py-3">
+            <BarChart3 className="h-5 w-5 text-muted-foreground flex-shrink-0" strokeWidth={2} />
+            <p className="text-xs text-muted-foreground">
+              Le <strong>score global</strong> sera calculé après ton test de personnalité Big Five.
+              Formation, expérience et compétences ont déjà été analysées.
+            </p>
+          </div>
+        )}
+
         {/* ── Conseil ── */}
         {competences.length < 3 && (
           <div className="flex items-start gap-3 bg-warning/10 rounded-xl px-4 py-3">
@@ -192,11 +208,39 @@ function ResultatAnalyse({ application, onContinuer }) {
   );
 }
 
+// ─── Barre de progression SSE ─────────────────────────────────────────────────
+function BarreProgression({ etape, label, progression }) {
+  return (
+    <div className="mt-4 bg-accent rounded-2xl px-4 py-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <svg className="animate-spin w-4 h-4 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+          </svg>
+          <p className="text-xs font-bold text-accent-foreground">{label || "Analyse IA en cours…"}</p>
+        </div>
+        <span className="text-xs font-bold text-primary">{progression}%</span>
+      </div>
+      <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+        <div
+          className="h-full bg-primary rounded-full transition-all duration-500"
+          style={{ width: `${progression}%` }}
+        />
+      </div>
+      <p className="text-[11px] text-accent-foreground/80">
+        Étape {etape} / 4 — spaCy et Sentence-BERT analysent ton CV…
+      </p>
+    </div>
+  );
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function DetailOffre() {
   const { offreId }  = useParams();
   const navigate     = useNavigate();
   const inputRef     = useRef(null);
+  const sseRef       = useRef(null);  // référence à l'EventSource SSE
 
   const [offre, setOffre]           = useState(null);
   const [loadError, setLoadError]   = useState("");
@@ -206,14 +250,46 @@ export default function DetailOffre() {
   const [progression, setProgression] = useState(0);
   const [error, setError]           = useState("");
 
-  // Résultat de l'analyse NLP — affiché après l'upload
-  const [resultat, setResultat]     = useState(null);
+  // État de l'analyse SSE
+  const [analyseEnCours, setAnalyseEnCours] = useState(false);
+  const [nlpEtape, setNlpEtape]             = useState(0);
+  const [nlpLabel, setNlpLabel]             = useState("Analyse IA en cours…");
+  const [nlpProgression, setNlpProgression] = useState(0);
 
+  // Résultat final affiché après analyse complète
+  const [resultat, setResultat] = useState(null);
+
+useEffect(() => {
+  api.get(`/offers/${offreId}`)
+    .then((r) => setOffre(r.data))
+    .catch(() => setLoadError("Offre introuvable."));
+
+  // Vérifie si le candidat a déjà postulé à cette offre — si oui, on
+  // affiche directement les résultats de l'analyse au lieu du formulaire
+  // d'upload (sinon la page se rechargeait toujours vide après un refresh).
+  api.get(`/applications/me`)
+    .then((r) => {
+      const candidatureExistante = r.data.find(
+        (c) => c.offre_id === Number(offreId)
+      );
+      if (candidatureExistante) {
+        setResultat(candidatureExistante);
+      }
+    })
+    .catch(() => {
+      // Pas grave si ça échoue — on retombe sur le formulaire d'upload
+    });
+}, [offreId]);
+
+  // Nettoyage du SSE si on quitte la page
   useEffect(() => {
-    api.get(`/offers/${offreId}`)
-      .then((r) => setOffre(r.data))
-      .catch(() => setLoadError("Offre introuvable."));
-  }, [offreId]);
+    return () => {
+      if (sseRef.current) {
+        sseRef.current.close();
+        sseRef.current = null;
+      }
+    };
+  }, []);
 
   const validerEtDefinirFichier = (file) => {
     setError("");
@@ -237,6 +313,79 @@ export default function DetailOffre() {
     validerEtDefinirFichier(e.dataTransfer.files[0]);
   };
 
+  /**
+   * Ouvre un EventSource SSE vers /applications/{id}/progress
+   * et re-fetche la candidature quand l'analyse est terminée (done: true).
+   */
+  const ecouterSSE = (applicationId) => {
+    const token = localStorage.getItem("token");
+    // EventSource ne supporte pas les headers custom — on passe le token
+    // en query param (le backend doit l'accepter, ou on utilise une URL signée).
+    // Si le backend exige le header Authorization, utiliser fetchEventSource à la place.
+    const url = `http://localhost:8000/applications/${applicationId}/progress?token=${token}`;
+
+    // Fermer un éventuel SSE précédent
+    if (sseRef.current) {
+      sseRef.current.close();
+    }
+
+    const es = new EventSource(url);
+    sseRef.current = es;
+
+    es.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        // Mise à jour de la barre de progression
+        setNlpEtape(data.etape || 0);
+        setNlpLabel(data.label || "Analyse en cours…");
+        setNlpProgression(data.progression || 0);
+
+        if (data.done) {
+          es.close();
+          sseRef.current = null;
+
+          if (data.error) {
+            // L'analyse a échoué — on affiche quand même ce qu'on a
+            setError("L'analyse IA a rencontré une erreur. Résultats partiels affichés.");
+          }
+
+          // Re-fetch la candidature pour avoir les champs NLP remplis
+          try {
+            const { data: candidature } = await api.get(`/applications/${applicationId}`);
+            setResultat(candidature);
+          } catch {
+            setError("Impossible de récupérer les résultats. Rafraîchis la page.");
+          } finally {
+            setAnalyseEnCours(false);
+            setSubmitting(false);
+          }
+        }
+      } catch {
+        // Message SSE non-JSON (ex: heartbeat ": heartbeat") — on ignore
+      }
+    };
+
+    es.onerror = async () => {
+      // Le SSE s'est fermé (fin normale ou erreur réseau)
+      es.close();
+      sseRef.current = null;
+
+      // Si on était encore en attente, on re-fetch quand même la candidature
+      if (analyseEnCours) {
+        try {
+          const { data: candidature } = await api.get(`/applications/${applicationId}`);
+          setResultat(candidature);
+        } catch {
+          setError("Connexion SSE perdue. Vérifie tes candidatures dans 'Mes candidatures'.");
+        } finally {
+          setAnalyseEnCours(false);
+          setSubmitting(false);
+        }
+      }
+    };
+  };
+
   const handlePostuler = async () => {
     if (!cvFile) { setError("Merci de sélectionner un fichier CV."); return; }
     setSubmitting(true);
@@ -248,6 +397,7 @@ export default function DetailOffre() {
     formData.append("file", cvFile);
 
     try {
+      // Étape 1 : upload du CV → le backend répond immédiatement avec l'id
       const { data } = await api.post("/applications", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (evt) => {
@@ -255,8 +405,13 @@ export default function DetailOffre() {
         },
       });
 
-      // ✅ Au lieu de rediriger directement, on affiche le résultat de l'analyse
-      setResultat(data);
+      // Étape 2 : on écoute le SSE pour suivre l'analyse NLP en temps réel
+      // NOTE : on NE fait PAS setResultat(data) ici car data.competences_extraites
+      // est null à cet instant — l'analyse NLP n'a pas encore tourné.
+      setAnalyseEnCours(true);
+      setNlpProgression(0);
+      setNlpLabel("Démarrage de l'analyse…");
+      ecouterSSE(data.id);
 
     } catch (err) {
       if (err.response?.status === 400) {
@@ -264,7 +419,6 @@ export default function DetailOffre() {
       } else {
         setError("Une erreur est survenue, réessaie.");
       }
-    } finally {
       setSubmitting(false);
     }
   };
@@ -392,7 +546,7 @@ export default function DetailOffre() {
             <Paperclip className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-card-foreground truncate">{cvFile.name}</p>
-              {submitting ? (
+              {submitting && !analyseEnCours ? (
                 <div className="w-full h-1.5 bg-secondary rounded-full mt-1.5 overflow-hidden">
                   <div
                     className="h-full bg-primary rounded-full transition-all duration-200"
@@ -403,31 +557,24 @@ export default function DetailOffre() {
                 <p className="text-xs text-muted-foreground">{formatTaille(cvFile.size)}</p>
               )}
             </div>
-            {submitting ? (
+            {submitting && !analyseEnCours ? (
               <span className="text-xs font-semibold text-primary flex-shrink-0">{progression}%</span>
-            ) : (
+            ) : !submitting ? (
               <button
                 onClick={(e) => { e.stopPropagation(); setCvFile(null); }}
                 className="text-muted-foreground/50 hover:text-destructive flex-shrink-0"
               ><X className="h-4 w-4" /></button>
-            )}
+            ) : null}
           </div>
         )}
 
-        {/* Message pendant l'analyse IA */}
-        {submitting && progression === 100 && (
-          <div className="mt-4 flex items-center gap-3 bg-accent rounded-2xl px-4 py-3">
-            <svg className="animate-spin w-4 h-4 text-primary flex-shrink-0" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-            </svg>
-            <div>
-              <p className="text-xs font-bold text-accent-foreground">Analyse IA en cours…</p>
-              <p className="text-[11px] text-accent-foreground/80">
-                spaCy et Sentence-BERT analysent ton CV. Quelques secondes…
-              </p>
-            </div>
-          </div>
+        {/* Barre de progression SSE (étapes NLP) */}
+        {analyseEnCours && (
+          <BarreProgression
+            etape={nlpEtape}
+            label={nlpLabel}
+            progression={nlpProgression}
+          />
         )}
 
         {error && <p className="text-sm text-destructive mt-3">{error}</p>}
@@ -438,9 +585,9 @@ export default function DetailOffre() {
           className="w-full mt-5 bg-primary hover:opacity-90 disabled:bg-secondary disabled:text-muted-foreground disabled:cursor-not-allowed text-primary-foreground text-sm font-bold py-2.5 rounded-full transition-colors duration-200"
         >
           {submitting
-            ? progression < 100
+            ? !analyseEnCours
               ? `Envoi en cours... ${progression}%`
-              : "Analyse IA en cours..."
+              : `Analyse IA — ${nlpProgression}%`
             : "Envoyer ma candidature"}
         </button>
       </div>

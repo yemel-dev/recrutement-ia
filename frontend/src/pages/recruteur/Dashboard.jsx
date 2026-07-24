@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import {
-  Search, MoreHorizontal, Sparkles, Plus, Mic,
-  Maximize2, ArrowUpRight, TrendingUp, Users,
-  Briefcase, LineChart, ChevronRight, Eye,
+  Search, MoreHorizontal, Plus,
+  ArrowUpRight, TrendingUp, Users,
+  Briefcase, ChevronRight, Eye,
   Download, RefreshCw
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -34,14 +34,14 @@ function scoreStyles(score) {
 const statusLabels = {
   en_attente: "Nouveau",
   analyse:    "En revue",
-  accepte:    "Entretien",
+  accepte:    "Accepté",
   rejete:     "Rejeté",
 };
 
 const statusStyles = {
   en_attente: "bg-gray-100 text-gray-500",
   analyse:    "bg-amber-50 text-amber-600",
-  accepte:    "bg-lime-50 text-lime-700",
+  accepte:    "bg-emerald-50 text-emerald-700",
   rejete:     "bg-red-50 text-red-500",
 };
 
@@ -49,7 +49,7 @@ const filterDefs = [
   { id: "tous",       label: "Tous"      },
   { id: "en_attente", label: "Nouveaux"  },
   { id: "analyse",    label: "En revue"  },
-  { id: "accepte",    label: "Entretien" },
+  { id: "accepte",    label: "Acceptés"  },
   { id: "rejete",     label: "Rejetés"   },
 ];
 
@@ -158,9 +158,8 @@ function CandidatesTable({ candidatures, offres }) {
   });
 
   const handleRowClick = (c) => {
-    // Utilise application_id si disponible, sinon l'id direct
-    const id = c.application_id || c.id;
-    navigate(`/recruteur/candidats/${id}`);
+    if (!c.application_id) return; // sécurité : évite un /applications/undefined
+    navigate(`/recruteur/candidats/${c.application_id}`);
   };
 
   return (
@@ -323,57 +322,48 @@ function ApplyingRatio({ candidatures }) {
 
 // ── Sidebar Assistant ──────────────────────────────────────────────────────
 function RecruteurSidebar({ candidatures, offres, candidaturesParOffre }) {
-  const chips = [
-    { icon: Search,    label: "Trouver"       },
-    { icon: Briefcase, label: "Mon pipeline"  },
-    { icon: LineChart, label: "Analyses"      },
-  ];
+  const aTraiter    = candidatures.filter(c => c.statut === "analyse").length;
+  const meilleur     = candidatures.length
+    ? Math.max(...candidatures.filter(c => c.score_global).map(c => Math.round(c.score_global * 100)))
+    : null;
+  const offresSansCandidat = offres.filter(o => o.is_active && !(candidaturesParOffre[o.id] > 0)).length;
 
   return (
     <aside className="flex w-full flex-col gap-5 lg:w-[300px] lg:shrink-0">
 
-      {/* Widget Assistant IA */}
+      {/* Résumé à traiter — remplace l'ancien widget "Assistant IA" (décoratif, non fonctionnel) */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-lime-50 to-white p-6 shadow-sm border border-lime-100">
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-lime-500 text-white">
-              <Sparkles className="h-4 w-4" strokeWidth={2.2} />
-            </span>
-            <span className="text-base font-bold tracking-tight text-gray-900">Assistant IA</span>
-          </div>
-          <button className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-lime-50">
-            <Maximize2 className="h-4 w-4" />
-          </button>
+        <div className="flex items-center gap-2.5 mb-6">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-lime-500 text-white">
+            <Briefcase className="h-4 w-4" strokeWidth={2.2} />
+          </span>
+          <span className="text-base font-bold tracking-tight text-gray-900">À traiter</span>
         </div>
 
-        <h2 className="text-xl font-bold leading-snug text-gray-900">
-          Pret a trouver les meilleurs talents ou a revoir votre vivier ?
-        </h2>
-
-        <nav className="mt-5 flex flex-wrap gap-2">
-          {chips.map(({ icon: Icon, label }) => (
-            <button
-              key={label}
-              className="flex items-center gap-2 rounded-full bg-white/70 px-3.5 py-2 text-xs font-medium text-gray-700 shadow-sm hover:bg-white"
-            >
-              <Icon className="h-3.5 w-3.5 text-lime-500" strokeWidth={2.2} />
-              {label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="mt-5 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-full bg-white px-4 py-3 shadow-sm">
-            <Plus className="h-4 w-4 text-gray-400" strokeWidth={2.2} />
-            <input
-              placeholder="Posez-moi une question..."
-              className="w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-300"
-            />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3 shadow-sm">
+            <span className="text-sm text-gray-600">Candidatures en revue</span>
+            <span className="text-lg font-bold text-gray-900">{aTraiter}</span>
           </div>
-          <button className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-lime-500 shadow-sm hover:bg-lime-50">
-            <Mic className="h-4 w-4" strokeWidth={2.2} />
-          </button>
+          <div className="flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3 shadow-sm">
+            <span className="text-sm text-gray-600">Offres sans candidat</span>
+            <span className="text-lg font-bold text-gray-900">{offresSansCandidat}</span>
+          </div>
+          {meilleur !== null && (
+            <div className="flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3 shadow-sm">
+              <span className="text-sm text-gray-600">Meilleur profil</span>
+              <span className="text-lg font-bold text-lime-600">{meilleur}%</span>
+            </div>
+          )}
         </div>
+
+        <Link
+          to="/recruteur/creer-offre"
+          className="mt-5 flex items-center justify-center gap-1.5 rounded-full bg-lime-500 hover:bg-lime-400 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition"
+        >
+          <Plus className="h-3.5 w-3.5" strokeWidth={2.6} />
+          Créer une nouvelle offre
+        </Link>
       </div>
 
       {/* Graphique candidatures */}

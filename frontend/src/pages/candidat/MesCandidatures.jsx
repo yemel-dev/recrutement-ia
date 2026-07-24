@@ -8,12 +8,14 @@ import EmptyState from "../../components/EmptyState";
 const STATUT_LABEL = {
   en_attente: "Analyse en cours",
   analyse:    "Analysée",
+  accepte:    "Acceptée 🎉",
   rejete:     "Rejetée",
 };
 
 const STATUT_STYLE = {
   en_attente: "bg-warning/15 text-warning",
-  analyse:    "bg-success/15 text-success",
+  analyse:    "bg-accent text-accent-foreground",
+  accepte:    "bg-success/15 text-success",
   rejete:     "bg-destructive/10 text-destructive",
 };
 
@@ -184,11 +186,17 @@ export default function MesCandidatures() {
 
                 {c.statut === "rejete" && (
                   <p className="text-xs text-muted-foreground mt-3">
-                    Cette candidature a été retirée à la suite d'une modération.
+                    Cette candidature n'a pas été retenue par le recruteur.
                   </p>
                 )}
 
-                {c.statut === "analyse" && scoreDisponible && (
+                {c.statut === "accepte" && (
+                  <p className="text-xs text-success font-semibold mt-3">
+                    Félicitations, le recruteur a accepté ta candidature !
+                  </p>
+                )}
+
+                {(c.statut === "analyse" || c.statut === "accepte") && scoreDisponible && (
                   <div className="mt-4 pt-4 border-t border-border">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold text-muted-foreground">Score global</span>

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import heroBg from "../assets/hero-bg.webp";
-import { Zap, Star, ArrowUpRight, ArrowRight, FileText, Brain, Trophy } from "lucide-react";
+import Logo from "../components/Logo";
+import Reveal from "../components/Reveal";
 
 export default function LandingPage() {
   return (
@@ -9,12 +10,7 @@ export default function LandingPage() {
       {/* ── NAVBAR ─────────────────────────────────────────────────────────── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-10 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center shadow-md">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-            </svg>
-          </div>
-          <span className="font-extrabold text-xl text-gray-900 tracking-tight">RecrutIA</span>
+          <Logo size="md" />
         </div>
 
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-500">
@@ -56,19 +52,25 @@ export default function LandingPage() {
         {/* Overlay sombre dégradé */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-gray-900/60 to-lime-900/40" />
 
+        {/* Formes flottantes — mouvement discret pour dynamiser le hero */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="animate-float-slow absolute -top-10 left-[8%] h-64 w-64 rounded-full bg-lime-400/20 blur-3xl" />
+          <div className="animate-float-slower absolute bottom-[-4rem] right-[10%] h-80 w-80 rounded-full bg-blue-400/10 blur-3xl" />
+        </div>
+
         {/* Contenu Hero */}
         <div className="relative z-10 max-w-6xl mx-auto px-10 pt-10 pb-16 w-full">
 
           {/* Badge */}
-          <div className="flex justify-center mb-8">
+          <Reveal className="flex justify-center mb-8">
             <span className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-semibold px-4 py-2 rounded-full">
               <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>
               Powered by NLP · Big Five · Scoring IA
             </span>
-          </div>
+          </Reveal>
 
           {/* Titre */}
-          <div className="text-center mb-10">
+          <Reveal delay={100} className="text-center mb-10">
             <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-6 tracking-tight drop-shadow-lg">
               Trouvez les bons{" "}
               <span className="text-lime-400">Candidats.</span>
@@ -82,8 +84,7 @@ export default function LandingPage() {
 
             {/* Boutons */}
             <div className="flex items-center justify-center gap-4 mb-10 flex-wrap">
-              
-                <a href="#comment"
+              <a href="#comment"
                 className="text-sm font-semibold text-white bg-white/10 backdrop-blur-sm border border-white/25 hover:bg-white/20 hover:border-white/40 px-7 py-3.5 rounded-full transition-all duration-300"
               >
                 Comment ça marche
@@ -93,9 +94,7 @@ export default function LandingPage() {
                 className="group text-sm font-bold bg-lime-500 hover:bg-lime-400 text-white px-7 py-3.5 rounded-full transition-all duration-300 shadow-lg hover:shadow-lime-400/40 hover:shadow-xl flex items-center gap-2"
               >
                 Créer un compte gratuit
-                <span className="bg-white/20 group-hover:bg-white/30 rounded-full w-6 h-6 flex items-center justify-center transition-all duration-200">
-                  <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
-                </span>
+                <span className="bg-white/20 group-hover:bg-white/30 rounded-full w-6 h-6 flex items-center justify-center text-xs transition-all duration-200">↗</span>
               </Link>
             </div>
 
@@ -109,26 +108,19 @@ export default function LandingPage() {
                 ))}
               </div>
               <div className="text-left">
-                <div className="flex items-center gap-1 text-lime-400 text-sm">
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-lime-400 text-lime-400" />
-                    ))}
-                  </div>
-                  <span className="font-bold text-white ml-1">5.0</span>
-                </div>
+                <div className="text-lime-400 text-sm">★★★★★ <span className="font-bold text-white">5.0</span></div>
                 <p className="text-xs text-gray-400">200+ Témoignages</p>
               </div>
             </div>
-          </div>
+          </Reveal>
 
           {/* 3 CARDS BASSES */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
 
             {/* Card 1 */}
-            <div className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1 cursor-pointer">
+            <Reveal delay={150} className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1 cursor-pointer">
               <div className="flex items-center gap-2 mb-3">
-                <Zap className="text-lime-400 w-6 h-6" strokeWidth={2.5} />
+                <span className="text-lime-400 text-2xl">⚡</span>
                 <h3 className="font-bold text-white text-sm">Analyse IA instantanée</h3>
               </div>
               <p className="text-xs text-gray-300 leading-relaxed mb-4">
@@ -147,10 +139,10 @@ export default function LandingPage() {
               >
                 Démarrer gratuitement
               </Link>
-            </div>
+            </Reveal>
 
             {/* Card 2 */}
-            <div className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1">
+            <Reveal delay={250} className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1">
               <div className="text-5xl font-extrabold text-white mb-2">75<span className="text-lime-400">%</span></div>
               <p className="text-xs text-gray-300 leading-relaxed mb-4">
                 des organisations croient que l'IA améliore la qualité et la rapidité du recrutement.
@@ -160,10 +152,10 @@ export default function LandingPage() {
               </div>
               <div className="mt-4 text-5xl font-extrabold text-white">90<span className="text-lime-400">%</span></div>
               <p className="text-xs text-gray-300 mt-1">des recruteurs préfèrent le recrutement basé sur les données.</p>
-            </div>
+            </Reveal>
 
             {/* Card 3 */}
-            <div className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1">
+            <Reveal delay={350} className="group bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-lime-400/40 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-lime-500/10 hover:-translate-y-1">
               <div className="text-5xl font-extrabold text-white mb-1">3<span className="text-lime-400">x</span></div>
               <p className="text-gray-300 text-xs mb-5">Plus rapide qu'un recrutement manuel traditionnel</p>
               <div className="bg-white/10 rounded-2xl p-4 space-y-3">
@@ -183,7 +175,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
 
           </div>
         </div>
@@ -206,34 +198,34 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {
-                icon: <FileText className="w-6 h-6 text-lime-600" strokeWidth={2} />,
+                icon: "📄",
                 title: "Analyse CV par NLP",
                 desc: "spaCy et Sentence-BERT extraient compétences, expérience et formation de chaque CV automatiquement.",
                 bg: "bg-lime-50", border: "border-lime-100", iconBg: "bg-lime-100",
                 hover: "hover:border-lime-300 hover:shadow-lime-100",
               },
               {
-                icon: <Brain className="w-6 h-6 text-blue-600" strokeWidth={2} />,
+                icon: "🧠",
                 title: "Psychométrie Big Five",
                 desc: "Test IPIP validé scientifiquement : 25 questions pour mesurer les 5 traits de personnalité OCEAN.",
                 bg: "bg-blue-50", border: "border-blue-100", iconBg: "bg-blue-100",
                 hover: "hover:border-blue-300 hover:shadow-blue-100",
               },
               {
-                icon: <Trophy className="w-6 h-6 text-purple-600" strokeWidth={2} />,
+                icon: "🏆",
                 title: "Classement IA",
                 desc: "Score multicritère pondéré : compétences 40%, expérience 25%, formation 20%, personnalité 15%.",
                 bg: "bg-purple-50", border: "border-purple-100", iconBg: "bg-purple-100",
                 hover: "hover:border-purple-300 hover:shadow-purple-100",
               },
-            ].map((f) => (
-              <div key={f.title} className={`group ${f.bg} border ${f.border} ${f.hover} rounded-2xl p-7 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-default`}>
+            ].map((f, i) => (
+              <Reveal key={f.title} delay={i * 100} className={`group ${f.bg} border ${f.border} ${f.hover} rounded-2xl p-7 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-default`}>
                 <div className={`w-12 h-12 ${f.iconBg} rounded-xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform duration-300`}>
                   {f.icon}
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2 text-base">{f.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -256,8 +248,8 @@ export default function LandingPage() {
               { num:"02", who:"Candidat",  title:"Dépose son CV",           desc:"Upload PDF ou Word. Le pipeline NLP analyse le CV automatiquement en arrière-plan.",                color:"bg-blue-500",   light:"text-blue-600 bg-blue-50" },
               { num:"03", who:"Candidat",  title:"Passe le test Big Five",  desc:"25 questions rapides pour évaluer sa personnalité selon le modèle scientifique OCEAN.",            color:"bg-purple-500", light:"text-purple-600 bg-purple-50" },
               { num:"04", who:"Recruteur", title:"Consulte le classement",  desc:"Candidats classés par score global avec le détail de chaque sous-score et profil OCEAN.",         color:"bg-gray-800",   light:"text-gray-600 bg-gray-100" },
-            ].map((s) => (
-              <div key={s.num} className="group flex gap-5 items-start bg-white border border-gray-100 hover:border-lime-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+            ].map((s, i) => (
+              <Reveal key={s.num} delay={i * 90} className="group flex gap-5 items-start bg-white border border-gray-100 hover:border-lime-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
                 <div className={`w-11 h-11 ${s.color} rounded-xl flex items-center justify-center font-bold text-white text-sm flex-shrink-0 group-hover:scale-105 transition-transform duration-300 shadow-md`}>
                   {s.num}
                 </div>
@@ -268,10 +260,10 @@ export default function LandingPage() {
                   <div className="font-bold text-gray-900 mb-0.5">{s.title}</div>
                   <div className="text-sm text-gray-500">{s.desc}</div>
                 </div>
-                <div className="text-gray-200 group-hover:text-lime-400 transition-colors duration-300 self-center">
-                  <ArrowRight className="w-5 h-5" strokeWidth={2.5} />
+                <div className="text-gray-200 group-hover:text-lime-400 transition-colors duration-300 text-xl self-center">
+                  →
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -285,13 +277,13 @@ export default function LandingPage() {
             { val:"75%", label:"Satisfaction RH"      },
             { val:"26+", label:"Compétences extraites" },
             { val:"5",   label:"Dimensions OCEAN"      },
-          ].map((s) => (
-            <div key={s.label} className="group">
+          ].map((s, i) => (
+            <Reveal key={s.label} delay={i * 100} className="group">
               <div className="text-4xl font-extrabold text-lime-400 mb-1 group-hover:scale-110 transition-transform duration-300">
                 {s.val}
               </div>
               <div className="text-xs text-gray-400 font-medium">{s.label}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -306,7 +298,7 @@ export default function LandingPage() {
             backgroundSize: "40px 40px",
           }}
         />
-        <div className="relative z-10">
+        <Reveal className="relative z-10">
           <h2 className="text-4xl font-extrabold text-white mb-3 tracking-tight">
             Prêt à recruter intelligemment ?
           </h2>
@@ -319,9 +311,7 @@ export default function LandingPage() {
               className="group bg-white hover:bg-gray-50 text-lime-600 font-bold px-8 py-3.5 rounded-full text-sm transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center gap-2"
             >
               Démarrer maintenant
-              <span className="bg-lime-100 group-hover:bg-lime-200 rounded-full w-6 h-6 flex items-center justify-center transition-all duration-200">
-                <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.5} />
-              </span>
+              <span className="bg-lime-100 group-hover:bg-lime-200 rounded-full w-6 h-6 flex items-center justify-center text-xs transition-all duration-200">↗</span>
             </Link>
             <Link
               to="/login"
@@ -330,20 +320,13 @@ export default function LandingPage() {
               Déjà un compte ? Se connecter
             </Link>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── FOOTER ─────────────────────────────────────────────────────────── */}
       <footer className="bg-gray-900 py-10 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-lime-500 flex items-center justify-center">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
-            <span className="font-bold text-white text-sm">RecrutIA</span>
-          </div>
+          <Logo size="sm" dark />
           <p className="text-gray-500 text-xs text-center">
             Projet de fin d'année · Master Intelligence Artificielle · Université de Dschang © 2026
           </p>

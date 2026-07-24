@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Search, ChevronRight } from "lucide-react";
 import api from "../../services/api";
 import StatusMessage from "../../components/StatusMessage";
 
@@ -16,11 +17,26 @@ function scoreBand(pct) {
   return           { text: "text-destructive", bg: "bg-destructive/10" };
 }
 
+const STATUT_LABEL = {
+  en_attente: "Nouveau",
+  analyse:    "En revue",
+  accepte:    "Accepté",
+  rejete:     "Rejeté",
+};
+
+const STATUT_STYLE = {
+  en_attente: "bg-secondary text-muted-foreground",
+  analyse:    "bg-warning/15 text-warning",
+  accepte:    "bg-success/15 text-success",
+  rejete:     "bg-destructive/10 text-destructive",
+};
+
 function initiales(prenom, nom) {
   return `${prenom?.[0] || ""}${nom?.[0] || ""}`.toUpperCase();
 }
 
 export default function ToutesCandidatures() {
+  const navigate = useNavigate();
   const [candidatures, setCandidatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -127,8 +143,9 @@ export default function ToutesCandidatures() {
             const band = scoreBand(pct);
             return (
               <div
-                key={`${entry.candidat_email}-${index}`}
-                className="bg-card rounded-3xl shadow-sm p-4 sm:p-5 flex items-center gap-4 flex-wrap"
+                key={entry.application_id ?? `${entry.candidat_email}-${index}`}
+                onClick={() => entry.application_id && navigate(`/recruteur/candidats/${entry.application_id}`)}
+                className="bg-card rounded-3xl shadow-sm p-4 sm:p-5 flex items-center gap-4 flex-wrap cursor-pointer hover:shadow-md transition-shadow duration-200"
               >
                 {/* Rang */}
                 <span className="text-xs font-bold text-muted-foreground w-7 flex-shrink-0">
@@ -149,6 +166,11 @@ export default function ToutesCandidatures() {
                   <span className="inline-block mt-1 text-[11px] font-medium bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">
                     {entry.offre_titre}
                   </span>
+                  {entry.statut && (
+                    <span className={`inline-block mt-1 ml-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full ${STATUT_STYLE[entry.statut] || "bg-secondary text-muted-foreground"}`}>
+                      {STATUT_LABEL[entry.statut] || entry.statut}
+                    </span>
+                  )}
                 </div>
 
                 {/* Sous-scores */}
@@ -169,6 +191,8 @@ export default function ToutesCandidatures() {
                   <span className={`text-lg font-extrabold leading-none ${band.text}`}>{pct}%</span>
                   <span className="text-[10px] text-muted-foreground mt-0.5">score global</span>
                 </div>
+
+                <ChevronRight className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
               </div>
             );
           })}

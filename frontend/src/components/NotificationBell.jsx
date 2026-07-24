@@ -47,6 +47,17 @@ function construireNotifications(candidatures, offres) {
       };
     }
 
+    if (c.statut === "accepte") {
+      return {
+        id: `accepte-${c.id}`,
+        date,
+        type: "success",
+        titre: "Candidature acceptée 🎉",
+        message: `Félicitations ! Le recruteur a accepté ta candidature pour "${titre}".`,
+        to: "/candidat/mes-candidatures",
+      };
+    }
+
     if (c.statut === "rejete") {
       return {
         id: `rejete-${c.id}`,

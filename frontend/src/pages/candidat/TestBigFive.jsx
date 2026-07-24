@@ -32,13 +32,26 @@ export default function TestBigFive() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [resultats, setResultats] = useState(null);
+  const [checkingExistant, setCheckingExistant] = useState(true);
+
+  // On vérifie d'abord si le candidat a déjà passé le test (il n'est passé
+  // qu'une seule fois et réutilisé pour toutes ses candidatures) — sinon on
+  // lui ferait répondre à 25 questions pour rien, avant de le bloquer avec
+  // une erreur "déjà passé" sans jamais lui montrer son résultat.
+  useEffect(() => {
+    api.get("/personality-tests/me")
+      .then((res) => setResultats(res.data))
+      .catch(() => {}) // 404 = pas encore de test, c'est normal
+      .finally(() => setCheckingExistant(false));
+  }, []);
 
   useEffect(() => {
+    if (resultats || checkingExistant) return;
     api.get("/personality-tests/questions")
       // L'API renvoie { questions: [...] }, pas directement le tableau.
       .then((res) => setQuestions(res.data.questions))
       .catch(() => setLoadError("Impossible de charger le test pour le moment."));
-  }, []);
+  }, [resultats, checkingExistant]);
 
   const submit = async (finalReponses) => {
     setSubmitting(true);
@@ -47,11 +60,19 @@ export default function TestBigFive() {
       const res = await api.post("/personality-tests", { reponses: finalReponses });
       setResultats(res.data);
     } catch (err) {
-      setError(
-        err.response?.status === 400
-          ? "Tu as déjà passé ce test."
-          : "Erreur lors de l'envoi du test, réessaie."
-      );
+      if (err.response?.status === 400) {
+        // Cas rare : le test a été passé entre le chargement de la page et
+        // la soumission (autre onglet, etc.). On récupère le résultat déjà
+        // enregistré plutôt que de laisser le candidat bloqué sur une erreur.
+        try {
+          const existant = await api.get("/personality-tests/me");
+          setResultats(existant.data);
+        } catch {
+          setError("Tu as déjà passé ce test.");
+        }
+      } else {
+        setError("Erreur lors de l'envoi du test, réessaie.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -69,9 +90,11 @@ export default function TestBigFive() {
   };
 
   if (loadError) return <StatusMessage type="error" message={loadError} />;
-  if (questions.length === 0 && !resultats) return <StatusMessage type="loading" message="Chargement du test..." />;
+  if (checkingExistant || (questions.length === 0 && !resultats)) {
+    return <StatusMessage type="loading" message="Chargement..." />;
+  }
 
-  // ── Page de résultats, une fois le test soumis ──────────────────────────
+  // ── Page de résultats, une fois le test soumis (ou déjà passé avant) ────
   if (resultats) {
     return (
       <div className="max-w-xl mx-auto text-center space-y-6">
@@ -79,8 +102,10 @@ export default function TestBigFive() {
           <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-4">
             <Check className="h-6 w-6 text-success" strokeWidth={2.5} />
           </div>
-          <h1 className="text-lg font-extrabold text-foreground">Test terminé, merci !</h1>
-          <p className="text-sm text-muted-foreground mt-1">Voici ton profil de personnalité (modèle OCEAN).</p>
+          <h1 className="text-lg font-extrabold text-foreground">Test de personnalité complété</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Voici ton profil de personnalité (modèle OCEAN) — il s'applique automatiquement à toutes tes candidatures.
+          </p>
         </div>
 
         <div className="bg-card rounded-3xl shadow-sm p-6 space-y-4 text-left">

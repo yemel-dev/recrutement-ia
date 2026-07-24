@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import NotificationBell from "./NotificationBell";
+import Logo from "./Logo";
 
 const navCandidat = [
   { path: "/candidat/dashboard",        label: "Tableau de bord" },
@@ -57,14 +58,9 @@ export default function Layout({ children }) {
       <header className="bg-card border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
 
-          {/* Logo */}
-          <div className="flex items-center gap-2 flex-shrink-0 mr-8">
-            <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 24 24" className="text-primary-foreground">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" />
-              </svg>
-            </div>
-            <span className="font-extrabold text-card-foreground text-base tracking-tight">RecrutIA</span>
+{/* Logo */}
+          <div className="mr-8 flex-shrink-0">
+            <Logo size="sm" />
           </div>
 
           {/* Nav centrale */}

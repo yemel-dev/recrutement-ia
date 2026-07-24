@@ -4,6 +4,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../context/AuthContext";
 import heroBg from "../assets/hero-bg.webp";
 import { Brain, Target, BarChart3, Trophy, AlertTriangle, ArrowLeft } from "lucide-react";
+import Logo from "../components/Logo";
 
 export default function Login() {
   const { login } = useAuth();
@@ -93,14 +94,7 @@ export default function Login() {
         />
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900/85 via-gray-900/70 to-lime-900/50" />
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-lime-500 rounded-xl flex items-center justify-center shadow-lg">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
-            <span className="font-extrabold text-xl text-white tracking-tight">RecrutIA</span>
-          </div>
+         <Logo size="lg" dark />
 
           <div>
             <h2 className="text-4xl font-extrabold text-white leading-tight mb-4">
@@ -135,14 +129,9 @@ export default function Login() {
       <div className="w-full lg:w-1/2 flex items-center justify-center bg-gray-50 px-6 py-12">
         <div className="w-full max-w-md">
 
-          {/* Logo mobile */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 bg-lime-500 rounded-lg flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-              </svg>
-            </div>
-            <span className="font-extrabold text-lg text-gray-900">RecrutIA</span>
+{/* Logo mobile */}
+          <div className="mb-8 lg:hidden">
+            <Logo />
           </div>
 
           <div className="mb-8">
