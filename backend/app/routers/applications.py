@@ -16,6 +16,7 @@ from typing import Dict, List, AsyncGenerator
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile, File, Form, status, Request
 from fastapi.responses import FileResponse, StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db, SessionLocal
@@ -37,21 +38,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Helper : contrôle d'accès à une candidature
-#
-# Lecture (voir le détail, télécharger le CV, suivre la progression) :
-# le candidat propriétaire, le recruteur propriétaire de l'offre, ou un admin.
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _verifier_lecture_candidature(candidature: Application, current_user: User) -> None:
-    """Autorise le candidat propriétaire, le recruteur propriétaire, ou un admin."""
-    est_le_candidat = candidature.candidat_id == current_user.id
+    est_le_candidat  = candidature.candidat_id == current_user.id
     est_le_recruteur = candidature.offre.recruteur_id == current_user.id
-    est_admin = current_user.role == UserRole.admin
+    est_admin        = current_user.role == UserRole.admin
     if not (est_le_candidat or est_le_recruteur or est_admin):
         raise HTTPException(status_code=403, detail="Accès refusé")
 
+
 # ── Stockage en mémoire des queues SSE ───────────────────────────────────────
-# Clé = application_id, Valeur = liste des asyncio.Queue en écoute
+
 _progress_queues: Dict[int, List[asyncio.Queue]] = {}
 
 
@@ -70,7 +68,6 @@ def _unregister_queue(application_id: int, q: asyncio.Queue):
 
 
 async def _broadcast(application_id: int, data: dict):
-    """Envoie un événement à tous les clients SSE qui écoutent cette candidature."""
     for q in _progress_queues.get(application_id, []):
         await q.put(data)
 
@@ -78,13 +75,7 @@ async def _broadcast(application_id: int, data: dict):
 # ── Tâche de fond : analyse NLP avec progression SSE ─────────────────────────
 
 def _run_analyse_background(application_id: int, chemin_fichier: str, competences_offre: list):
-    """
-    Exécutée dans un thread séparé par BackgroundTasks.
-    Utilise une nouvelle session DB (hors contexte de la requête HTTP).
-    """
     import asyncio as _asyncio
-
-    # On récupère ou crée une boucle événementielle pour pouvoir faire des await
     try:
         loop = _asyncio.get_event_loop()
     except RuntimeError:
@@ -92,12 +83,8 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
         _asyncio.set_event_loop(loop)
 
     def emit(etape: int, label: str, progression: int):
-        """Callback appelé par chaque étape du pipeline NLP."""
         payload = {"etape": etape, "label": label, "progression": progression}
-        # On programme l'envoi SSE dans la boucle principale
-        asyncio.run_coroutine_threadsafe(
-            _broadcast(application_id, payload), loop
-        )
+        asyncio.run_coroutine_threadsafe(_broadcast(application_id, payload), loop)
 
     db = SessionLocal()
     try:
@@ -108,14 +95,12 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
         offre = application.offre
         competences_list = competences_offre
 
-        # ── Lance le pipeline NLP avec le callback de progression ─────────────
         resultat_nlp = analyser_cv(
             chemin_fichier,
             competences_offre=competences_list,
             on_progress=emit,
         )
 
-        # ── Sauvegarde des résultats NLP en base ──────────────────────────────
         application.competences_extraites = json.dumps(resultat_nlp["competences_extraites"])
         application.experience_annees     = resultat_nlp["experience_annees"]
         application.formation_niveau      = resultat_nlp["formation_niveau"]
@@ -123,11 +108,9 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
         db.commit()
         db.refresh(application)
 
-        # ── Tentative de scoring final ────────────────────────────────────────
         tenter_calculer_score(db, application)
         db.refresh(application)
 
-        # ── Événement final : terminé ─────────────────────────────────────────
         payload_final = {
             "etape": 5,
             "label": "Analyse terminée",
@@ -136,12 +119,9 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
             "score_global": application.score_global,
             "statut": application.statut.value,
         }
-        asyncio.run_coroutine_threadsafe(
-            _broadcast(application_id, payload_final), loop
-        )
+        asyncio.run_coroutine_threadsafe(_broadcast(application_id, payload_final), loop)
 
     except Exception as e:
-        # En cas d'erreur, on notifie le frontend
         error_payload = {
             "etape": -1,
             "label": f"Erreur : {str(e)}",
@@ -149,9 +129,7 @@ def _run_analyse_background(application_id: int, chemin_fichier: str, competence
             "done": True,
             "error": True,
         }
-        asyncio.run_coroutine_threadsafe(
-            _broadcast(application_id, error_payload), loop
-        )
+        asyncio.run_coroutine_threadsafe(_broadcast(application_id, error_payload), loop)
     finally:
         db.close()
 
@@ -166,11 +144,6 @@ def postuler(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Le candidat dépose sa candidature.
-    Retourne IMMÉDIATEMENT la candidature (statut en_attente).
-    L'analyse NLP se lance en arrière-plan et diffuse sa progression via SSE.
-    """
     if current_user.role != UserRole.candidat:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail="Seul un candidat peut postuler à une offre")
@@ -197,7 +170,6 @@ def postuler(
     with open(chemin_fichier, "wb") as destination:
         shutil.copyfileobj(file.file, destination)
 
-    # ── Création immédiate de la candidature en base (statut = en_attente) ──
     nouvelle_candidature = Application(
         candidat_id=current_user.id,
         offre_id=offre_id,
@@ -209,7 +181,6 @@ def postuler(
     db.commit()
     db.refresh(nouvelle_candidature)
 
-    # ── Lancement de l'analyse NLP en arrière-plan ───────────────────────────
     competences_offre = json.loads(offre.competences_requises)
     background_tasks.add_task(
         _run_analyse_background,
@@ -218,7 +189,6 @@ def postuler(
         competences_offre,
     )
 
-    # ── Notifications email ──────────────────────────────────────────────────
     background_tasks.add_task(
         email_service.envoyer_candidature_recue,
         current_user.email, current_user.prenom, offre.titre, file.filename,
@@ -229,7 +199,6 @@ def postuler(
         current_user.nom, current_user.prenom,
     )
 
-    # ── Réponse immédiate au candidat ─────────────────────────────────────────
     return nouvelle_candidature
 
 
@@ -242,17 +211,12 @@ async def progression_analyse(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    SSE : diffuse la progression de l'analyse NLP en temps réel.
-    Le client écoute avec EventSource jusqu'à réception de done=True.
-    """
     candidature = db.query(Application).filter(Application.id == application_id).first()
     if candidature is None:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
 
     _verifier_lecture_candidature(candidature, current_user)
 
-    # Si l'analyse est déjà terminée, on renvoie directement l'état final
     if candidature.statut != ApplicationStatus.en_attente:
         async def already_done():
             data = {
@@ -268,23 +232,16 @@ async def progression_analyse(
     async def event_generator() -> AsyncGenerator[str, None]:
         q = _register_queue(application_id)
         try:
-            # Ping initial pour confirmer la connexion
             yield "data: " + json.dumps({"etape": 0, "label": "Connexion établie", "progression": 0}) + "\n\n"
-
             while True:
-                # Vérifie si le client a fermé la connexion
                 if await request.is_disconnected():
                     break
-
                 try:
-                    # Attend un événement avec timeout (pour détecter déconnexion)
                     event = await asyncio.wait_for(q.get(), timeout=2.0)
                     yield f"data: {json.dumps(event)}\n\n"
-
                     if event.get("done"):
                         break
                 except asyncio.TimeoutError:
-                    # Envoie un heartbeat pour maintenir la connexion
                     yield ": heartbeat\n\n"
         finally:
             _unregister_queue(application_id, q)
@@ -319,9 +276,7 @@ def obtenir_candidature(
     candidature = db.query(Application).filter(Application.id == application_id).first()
     if candidature is None:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
-
     _verifier_lecture_candidature(candidature, current_user)
-
     return candidature
 
 
@@ -336,12 +291,9 @@ def telecharger_cv(
     candidature = db.query(Application).filter(Application.id == application_id).first()
     if candidature is None:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
-
     _verifier_lecture_candidature(candidature, current_user)
-
     if not os.path.exists(candidature.cv_path):
         raise HTTPException(status_code=404, detail="Fichier CV introuvable sur le serveur")
-
     return FileResponse(
         path=candidature.cv_path,
         filename=candidature.cv_filename,
@@ -358,13 +310,7 @@ def moderer_candidature(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.admin)),
 ):
-    """
-    [ADMIN] Rejette une candidature pour modération (contenu inapproprié, litige...).
-
-    Comme pour les offres, l'admin ne modifie pas les données métier de la
-    candidature (scores, fichiers, statut d'avancement normal) — il ne fait
-    que trancher un litige en la marquant "rejete".
-    """
+    """[ADMIN] Rejette une candidature pour modération."""
     candidature = db.query(Application).filter(Application.id == application_id).first()
     if candidature is None:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
@@ -377,5 +323,58 @@ def moderer_candidature(
         email_service.envoyer_candidature_rejetee,
         candidature.candidat.email, candidature.candidat.prenom, candidature.offre.titre,
     )
+    return candidature
+
+
+# ─── PATCH /applications/{id}/statut ─────────────────────────────────────────
+
+class StatutUpdate(BaseModel):
+    statut: str  # "accepte" ou "rejete"
+
+
+@router.patch("/{application_id}/statut", response_model=ApplicationResponse)
+def changer_statut_candidature(
+    application_id: int,
+    body: StatutUpdate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """[RECRUTEUR] Accepte ou rejette une candidature depuis la fiche candidat."""
+    if current_user.role not in [UserRole.recruteur, UserRole.admin]:
+        raise HTTPException(
+            status_code=403,
+            detail="Seul un recruteur peut modifier le statut d'une candidature"
+        )
+
+    candidature = db.query(Application).filter(Application.id == application_id).first()
+    if candidature is None:
+        raise HTTPException(status_code=404, detail="Candidature introuvable")
+
+    if current_user.role == UserRole.recruteur:
+        if candidature.offre.recruteur_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Vous n'êtes pas le recruteur propriétaire de cette offre"
+            )
+
+    statuts_autorises = ["accepte", "rejete", "analyse"]
+    if body.statut not in statuts_autorises:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Statut invalide. Valeurs acceptées : {statuts_autorises}"
+        )
+
+    candidature.statut = ApplicationStatus[body.statut]
+    db.commit()
+    db.refresh(candidature)
+
+    if body.statut == "rejete":
+        background_tasks.add_task(
+            email_service.envoyer_candidature_rejetee,
+            candidature.candidat.email,
+            candidature.candidat.prenom,
+            candidature.offre.titre,
+        )
 
     return candidature

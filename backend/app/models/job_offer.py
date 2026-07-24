@@ -13,6 +13,15 @@ class JobOffer(Base):
     competences_requises = Column(Text, nullable=False)  # JSON stocké en texte
     experience_requise = Column(Integer, default=0)       # Années d'expérience
 
+    # Informations générales du poste (alignées sur la maquette V0 candidat)
+    entreprise = Column(String(255), nullable=True)
+    localisation = Column(String(150), nullable=True)
+    type_contrat = Column(String(50), default="Temps plein")       # Temps plein, Temps partiel, Alternance, Stage, Freelance
+    niveau_experience = Column(String(50), default="Intermediaire")  # Junior, Intermediaire, Senior, Lead
+    mode_travail = Column(String(50), default="Hybride")            # Sur site, Hybride, Teletravail
+    salaire_min = Column(Integer, nullable=True)
+    salaire_max = Column(Integer, nullable=True)
+
     # Profil OCEAN idéal (entre 0 et 1)
     ocean_O = Column(Float, default=0.5)  # Ouverture
     ocean_C = Column(Float, default=0.5)  # Conscience

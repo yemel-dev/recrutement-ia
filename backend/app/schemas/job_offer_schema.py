@@ -12,6 +12,15 @@ class JobOfferBase(BaseModel):
     competences_requises: List[str]
     experience_requise: int = 0
 
+    # Informations générales du poste
+    entreprise: Optional[str] = None
+    localisation: Optional[str] = None
+    type_contrat: str = "Temps plein"
+    niveau_experience: str = "Intermediaire"
+    mode_travail: str = "Hybride"
+    salaire_min: Optional[int] = None
+    salaire_max: Optional[int] = None
+
     # Profil OCEAN idéal
     ocean_O: float = 0.5
     ocean_C: float = 0.5
@@ -71,6 +80,13 @@ class JobOfferUpdate(BaseModel):
     description: Optional[str] = None
     competences_requises: Optional[List[str]] = None
     experience_requise: Optional[int] = None
+    entreprise: Optional[str] = None
+    localisation: Optional[str] = None
+    type_contrat: Optional[str] = None
+    niveau_experience: Optional[str] = None
+    mode_travail: Optional[str] = None
+    salaire_min: Optional[int] = None
+    salaire_max: Optional[int] = None
     ocean_O: Optional[float] = None
     ocean_C: Optional[float] = None
     ocean_E: Optional[float] = None
